@@ -29,6 +29,6 @@ export type PlacesDataset = {
   cities: CityData[];
 };
 
-export type CategoryId = "groceries" | "coffee" | "pharmacy" | "parks" | "restaurants" | "hardware";
+export type CategoryId = "groceries" | "coffee" | "pharmacy" | "parks" | "restaurants" | "fast_food" | "hardware";
 
 export type Anchor = Coordinate & { label: string };

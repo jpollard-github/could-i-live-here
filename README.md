@@ -1,47 +1,72 @@
 # Could I Live Here?
 
-**Pitch:** Before you fall for the house, meet the neighborhood. Compare two points in Lexington or Kernersville, NC, by the actual places mapped near them.
+**One-sentence pitch:** Compare what everyday life might look like around your current location and a possible new home, using nearby places from Overture Maps rather than an invented neighborhood score.
 
-A deliberately small take-home product: pick locations, choose six kinds of everyday essentials, set a radius, and compare counts and nearest examples on a map. No made-up "livability" score. The intended user is somebody deciding between places to live.
+A small, usable neighborhood explorer for somebody considering a move. By default, **A is a Kernersville, NC reference** and **B is a Lexington, NC candidate**. Switch B among example areas or place either pin anywhere within the downloaded region. The supplied coordinates are **not home listings**. The user decides what matters.
 
-## Start
+## How to use it
 
-Requires **Node 22+**, **Corepack / pnpm**, and **Python 3** for the one-time map extraction.
+1. Select **A** (where you live now) or **B** (where you might move). The map shows the selected location; the other location remains in the comparison below.
+2. Choose a town and sample area, or **click empty map space / drag the letter pin** to place A or B precisely. Clicking a colored dot *inspects that place* and does not move the pin.
+3. Enable the amenity categories you care about. All are **off by default**. The dashed circle is **0.5 miles** by default. Change the straight-line radius if useful.
+4. Compare the results for A and B. **Browse** any category to scroll through **all** matching mapped places; selecting a result highlights it on the map.
+
+Seven distinct filters: Groceries, Coffee & cafés, Pharmacy, Parks, Restaurants, Fast food, Hardware. Fast food is separate from restaurants, and cafés are separate from both. **“Restaurants” does not mean locally owned**; Overture cannot establish ownership consistently, so we make no such claim.
+
+## Run locally
+
+Needs Node 22+, Python 3, and pnpm 10.20.0 (version declared in `package.json`). **Corepack is optional** if you already have pnpm of the declared version; its purpose is to obtain/use the pinned package manager without installing a global pnpm manually. Corepack is a package-manager bootstrapper, *not a runtime dependency or a web framework*.
 
 ```bash
+# One-time if pnpm isn't installed (with Node 22's bundled Corepack):
 corepack enable
-corepack pnpm install
+corepack pnpm install --frozen-lockfile
+
+# Python extraction dependencies are isolated from Homebrew's Python:
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install overturemaps
+python -m pip install overturemaps
+
+# The ZIP already includes a real source extract; refresh it when desired:
 corepack pnpm data:refresh
 corepack pnpm dev
 ```
 
-Open http://localhost:3000. The generated `data/places.json` is what the website ships. **The download ZIP contains an intentionally empty snapshot, not invented Overture records: run the refresh before deploying or evaluating real places.** If the download fails, the old snapshot is preserved. Run `corepack pnpm check` before submitting.
+Open http://localhost:3000. If you installed the matching pnpm independently, replace `corepack pnpm` with `pnpm`. The environment must have internet access for the Overture CLI and basemap tiles. `data:refresh` atomically updates `data/places.json`, preserving the previous snapshot if either town fails. `.venv/` is gitignored. Never use `--break-system-packages`.
 
-## Why this product
+## Engineering decisions and trade-offs
 
-Home listings describe the property, but not whether everyday routines are convenient. A small, inspectable comparison is more honest than an opaque neighborhood score.
+| Choice | Reason | Deliberate limitation |
+| --- | --- | --- |
+| **Next.js / React / TypeScript** | Familiar component model, straightforward Vercel deployment, strong types for the small data model; same stack can support future features | No need for a custom API server today |
+| **pnpm + locked dependencies** | Efficient content-addressed package store, predictable installs, strict dependency graph; `packageManager` pins the CLI version | Corepack only activates the pinned pnpm; no runtime dependency |
+| **Plain CSS** | Fast, distinctive field-guide design without a component library | A few hand-written responsive styles |
+| **MapLibre + OpenFreeMap** | Interactive map, colored place dots, draggable anchors, real geographic radius polygon, no map API keys | Basemap tiles need a network connection |
+| **Bounded static Overture Places JSON** | Actual open geodata; no API key, database, or runtime query costs; fast client-side filters for hundreds of places | Only the downloaded NC areas are searchable, and coverage/accuracy vary |
+| **Great-circle distance** | Mathematically well-defined radius that can be rendered as a geographic circle | **Not walking distance, road access, or travel time** |
+| **Two positions, one map view** | Useful Kernersville-versus-Lexington comparison without zooming so far out the 0.5-mile details disappear | Change A/B to switch the map; the result cards stay side by side |
+| **No ranking/AI recommendation** | User chooses essentials, reads evidence, and makes the judgment | No invented quality or “livability” score |
 
-## Design and trade-offs
-
-- Next.js App Router + TypeScript + plain CSS; no component framework. MapLibre uses OpenFreeMap's public basemap. Built for Vercel; no server-side database.
-- A Python script calls the **official Overture Maps CLI** to download bounded Places GeoJSON for two NC towns, filters exact taxonomy categories, omits unnamed/low-confidence entries, and writes one compact, versioned JSON snapshot. The app makes no runtime Overture API calls.
-- The map is optional: tiles require network, but comparison controls and data still work without them.
-- Selection is by map click or preset coordinates, not address search. Presets are **areas**, not verified home listings.
-- Distances are great-circle miles. They are neither a route nor travel-time estimate.
-- Overture may miss, misclassify, or duplicate places. "No mapped matches" means no matching records in the selected radius, **not** proof an amenity doesn't exist. Data freshness is displayed.
-- No tracking, accounts, geocoding API keys, database, routing, home values, or automatic scheduled refresh. This slice does not earn those costs.
+Overture classifications are derived from exact `basic_category` and taxonomy tokens. We exclude broad `casual_eatery` from restaurants so bakeries and dessert shops do not inflate restaurant counts, and `fast_food_restaurant` is classified separately. We deliberately do not infer independent vs chain ownership. A place may still be duplicated, stale, misclassified, or missing; the UI calls results **mapped matches**, never an exhaustive census. Only places within the active radius are drawn, reducing dot overload.
 
 ## Quality / operations
 
-`corepack pnpm check` runs ESLint, TypeScript, Node's focused tests, and a production Next.js build. `python3 -m unittest discover -s scripts -p 'test_*.py' -v` covers the extraction filter. GitHub Actions runs both. `/api/health` returns 200 when both city snapshots contain supported places; 503 when setup is incomplete. The health endpoint logs a structured status; client map and render failures log structured error events without user coordinates.
+```bash
+corepack pnpm lint               # ESLint
+corepack pnpm typecheck          # TypeScript
+corepack pnpm test               # Node's built-in test runner
+python3 -m unittest discover -s scripts -p 'test_*.py' -v
+corepack pnpm build              # production Next.js build
+corepack pnpm check              # all four JavaScript checks, including build
+corepack pnpm repo:export        # review ZIP using Git ignore rules
+```
 
-Export a reviewable repo with `corepack pnpm repo:export`. It uses Git's ignore rules, includes untracked unignored files, and excludes `.git`, `.env*`, and installed dependencies. The agent instruction lives at `.agents/skills/repo-export/SKILL.md`.
+GitHub Actions runs lint, types, tests, build, and Python extraction tests. The committed `pnpm-lock.yaml` is installed with `--frozen-lockfile`. `/api/health` returns 200 when the snapshots exist, and 503 if incomplete. Errors are logged in structured form, without user pin coordinates or search history. No cookies, accounts, analytics, API keys, user data store, or external geocoder.
 
-## Data and attribution
+The review ZIP exporter lives in `scripts/export_repo.py`; its agent-friendly instructions live in `.agents/skills/repo-export/SKILL.md`. It includes nonignored tracked/untracked files but omits `.git`, `.venv`, installed packages, environment files and other ignored data.
 
-Places: [Overture Maps Foundation](https://overturemaps.org/), Places theme (CDLA Permissive 2.0 / Apache 2.0, depending on source). [Schema and licensing](https://docs.overturemaps.org/guides/places/) · [Source access](https://docs.overturemaps.org/getting-data/). Basemap: [OpenFreeMap](https://openfreemap.org/) / OpenMapTiles / OpenStreetMap, credited by MapLibre.
+## Source, attribution, and cuts
 
-For a deployment, commit `data/places.json` after running the extraction. It contains *mapped places*, not users' home addresses. Never upload credentials or customer location histories.
+Places: [Overture Maps Foundation](https://overturemaps.org/) Places theme; check [schema/licensing](https://docs.overturemaps.org/guides/places/) and [data access](https://docs.overturemaps.org/getting-data/). Basemap: [OpenFreeMap](https://openfreemap.org/), OpenMapTiles and OpenStreetMap contributors (MapLibre attribution control). `data/places.json` is a checked-in extract with generation time and source metadata; update it via `scripts/export_overture.py`, not manual additions.
+
+**Not built:** address geocoding, Zillow integration, routing, live opening hours, ownership determination, quality ranking, accounts, database, deployment jobs, scheduled data updates, or map analytics. Each would add cost or claim more than the data supports.

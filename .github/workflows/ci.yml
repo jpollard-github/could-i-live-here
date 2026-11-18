@@ -15,9 +15,8 @@ jobs:
           node-version: '22'
       - name: Enable pnpm using Corepack
         run: corepack enable
-      # Once a lockfile is committed, replace with `--frozen-lockfile`.
       - name: Install dependencies
-        run: corepack pnpm install --no-frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
       - name: JavaScript lint, types, tests, production build
         run: corepack pnpm check
       - name: Python extraction tests

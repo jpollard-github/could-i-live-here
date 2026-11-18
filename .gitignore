@@ -13,3 +13,7 @@ __pycache__/
 *.log
 artifacts/
 /data/.tmp/
+exports/
+
+# Local Python extraction environment
+.venv/

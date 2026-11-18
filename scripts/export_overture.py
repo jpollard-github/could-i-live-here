@@ -26,7 +26,7 @@ CATEGORY_TOKENS = {
     "coffee_shop", "coffeehouse", "cafe", "tea_house",
     "pharmacy", "drugstore",
     "park", "public_park", "playground", "botanical_garden", "nature_reserve",
-    "restaurant", "casual_eatery", "fast_food_restaurant", "diner", "bistro",
+    "restaurant", "fast_food_restaurant", "diner", "bistro",
     "hardware_store", "home_improvement_store", "building_materials_store", "tool_store",
 }
 MAX_PER_CITY = 15_000

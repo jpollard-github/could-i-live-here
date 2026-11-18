@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { formatDistance, insideBBox, milesBetween } from "./geo.ts";
-import { belongsToCategory } from "./categories.ts";
+import { belongsToCategory, categoryForPlace } from "./categories.ts";
+import { radiusRing, ringBounds } from "./circle.ts";
 import { essentialsCount, nearbyByCategory } from "./derive.ts";
 import type { Place } from "./types.ts";
 
@@ -41,6 +42,33 @@ test("radius filters and nearest records are consistent", () => {
   assert.equal(results[2].count, 0);
   assert.equal(essentialsCount(results), 2);
   assert.deepEqual(results[0].closest.map((r) => r.place.id), ["c"]);
+});
+
+test("fast food and coffee are distinct from restaurants", () => {
+  const fastFood: Place = { ...cafe, id: "f", category: "fast_food_restaurant", taxonomy: ["food_and_drink", "casual_eatery", "fast_food_restaurant"] };
+  const restaurant: Place = { ...cafe, id: "r", category: "restaurant", taxonomy: ["food_and_drink", "restaurant"] };
+  const bakery: Place = { ...cafe, id: "b", category: "casual_eatery", taxonomy: ["food_and_drink", "casual_eatery", "bakery"] };
+  assert.equal(categoryForPlace(fastFood), "fast_food");
+  assert.equal(belongsToCategory(fastFood, "restaurants"), false);
+  assert.equal(categoryForPlace(restaurant), "restaurants");
+  assert.equal(categoryForPlace(bakery), null);
+  assert.equal(categoryForPlace(cafe), "coffee");
+});
+
+test("nearby lists preserve all results, rather than an arbitrary first three", () => {
+  const places = Array.from({ length: 12 }, (_, i) => ({ ...cafe, id: `c-${i}`, name: `Cafe ${i}` }));
+  const results = nearbyByCategory(places, anchor, 0.5, ["coffee"]);
+  assert.equal(results[0].closest.length, 12);
+  assert.equal(results[0].count, 12);
+});
+
+test("radius polygon is closed and every vertex stays near the chosen distance", () => {
+  const ring = radiusRing(anchor, 0.5);
+  assert.deepEqual(ring[0], ring[ring.length - 1]);
+  assert.equal(ring.length, 73);
+  for (const [lng, lat] of ring) assert.ok(Math.abs(milesBetween(anchor, { lng, lat }) - 0.5) < 0.0002);
+  const [[west, south], [east, north]] = ringBounds(ring);
+  assert.ok(west < anchor.lng && east > anchor.lng && south < anchor.lat && north > anchor.lat);
 });
 
 test("invalid radius fails loudly", () => {

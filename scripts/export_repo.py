@@ -7,14 +7,20 @@ Never includes .git metadata, gitignored dependencies, or local .env secrets.
 from __future__ import annotations
 
 from argparse import ArgumentParser
-import os
+from datetime import datetime
 from pathlib import Path
 import subprocess
 import tempfile
 from zipfile import ZipFile, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parent.parent
+EXPORTS_DIR = ROOT / "exports"
 HARD_EXCLUDES = {".git", "node_modules", ".next", ".vercel", "artifacts", "coverage", "__pycache__"}
+
+
+def default_output(now: datetime | None = None) -> Path:
+    timestamp = (now or datetime.now().astimezone()).strftime("%Y-%m-%d_%H-%M-%S")
+    return EXPORTS_DIR / f"could-i-live-here-review-{timestamp}.zip"
 
 
 def git_entries(root: Path) -> list[str]:
@@ -44,12 +50,12 @@ def safe_include(path: Path, root: Path) -> bool:
 
 def main() -> None:
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=ROOT.parent / "could-i-live-here-review.zip")
+    parser.add_argument("--output", type=Path, default=default_output())
     args = parser.parse_args()
     target = args.output.expanduser().resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
-    if target.is_relative_to(ROOT):
-        raise SystemExit("Put the export ZIP outside the repository (or in a gitignored directory)")
+    if target.is_relative_to(ROOT) and not target.is_relative_to(EXPORTS_DIR):
+        raise SystemExit("Put the export ZIP outside the repository or in its exports directory")
     names = [name for name in git_entries(ROOT) if safe_include(ROOT / name, ROOT)]
     with ZipFile(target, "w", ZIP_DEFLATED, compresslevel=9) as archive:
         for name in names:

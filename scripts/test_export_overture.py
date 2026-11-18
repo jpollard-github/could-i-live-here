@@ -29,6 +29,13 @@ class ExtractTests(unittest.TestCase):
         self.assertIsNone(mod.normalize(self.feature("car_park"), self.bbox))
         self.assertEqual(mod.normalize(self.feature("park"), self.bbox)["name"], "Test name")
 
+    def test_broad_casual_eateries_do_not_sneak_into_restaurants(self):
+        feature = self.feature("casual_eatery")
+        feature["properties"]["taxonomy"]["hierarchy"] = ["food_and_drink", "casual_eatery", "bakery"]
+        self.assertIsNone(mod.normalize(feature, self.bbox))
+        feature["properties"]["taxonomy"]["hierarchy"].append("fast_food_restaurant")
+        self.assertIsNotNone(mod.normalize(feature, self.bbox))
+
     def test_bbox_and_confidence(self):
         self.assertIsNone(mod.normalize(self.feature("cafe", lon=-81), self.bbox))
         self.assertIsNone(mod.normalize(self.feature("cafe", confidence=0.1), self.bbox))
