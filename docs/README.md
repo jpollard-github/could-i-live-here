@@ -1,21 +1,40 @@
 # Engineering notes
 
-These are **optional deep dives**, not homework for someone evaluating the product. The [short README](../README.md) answers the assignment in a minute; the running app is the primary evidence. If a reviewer wants to challenge a decision, the relevant detail is here.
+The [live app](https://could-i-live-here.vercel.app/) is the product. The [short README](../README.md) is the take-home submission summary. Everything below is optional: pick the question you're trying to answer instead of reading the documentation front to back.
 
-| Document | When to read it |
+## Three ways in
+
+### 1. Understand the product
+
+**Question:** *Why would someone use this, and what decisions shaped the experience?*
+
+Start with [Product & UX](PRODUCT.md) for the real moving-house question, the A/B journey, and intentional omissions. Then read [Architecture & data](ARCHITECTURE.md) for the static Overture extract and why the application doesn't need a backend. See [Data attribution](DATA-ATTRIBUTION.md) for the boundaries of what we can claim about the source.
+
+### 2. Work on the code
+
+**Question:** *How do I run, change, or verify something without guessing?*
+
+Start with [Commands](COMMANDS.md) for setup, tests, data refresh, and repo export. Then use [Quality & security](QUALITY.md) to see what CI and browser tests actually establish. Check [Review findings](REVIEW-FINDINGS.md) for known problems and accepted tradeoffs. The [browser-test guide](../tests/e2e/README.md) explains deterministic versus live-map testing.
+
+### 3. Challenge the engineering decisions
+
+**Question:** *Why this approach, what went wrong, and what would you change?*
+
+Start with [Interview questions](INTERVIEW.md) for the short explanation, skeptical objections, biases, and mentoring approaches. Follow the specific question into [Architecture & data](ARCHITECTURE.md), [Quality & security](QUALITY.md), or the [living findings](REVIEW-FINDINGS.md). [AI-assisted workflow](AI-WORKFLOW.md) explains which work was delegated and how decisions were reviewed.
+
+## Find a decision quickly
+
+| Question | Start here |
 | --- | --- |
-| [Using the repository / commands](COMMANDS.md) | Setup, dev, production, tests, extraction, security audit, export, and F-05 manual check |
-| [Product & UX](PRODUCT.md) | Real problem, user journey, accessibility limitations, what we deliberately cut |
-| [Architecture & data](ARCHITECTURE.md) | Why Next.js, MapLibre, static Overture JSON, and offline Python; provenance and operations |
-| [Quality & security](QUALITY.md) | Threat model, CI/E2E test scope, MapLibre worker incident, commands, unverified claims |
-| [Review findings](REVIEW-FINDINGS.md) | Living issue register with decisions, remaining risks and evidence |
-| [AI-assisted workflow](AI-WORKFLOW.md) | How editor AI and broader ChatGPT review fit into human selection and verification |
-| [Interview notes](INTERVIEW.md) | Thirty-second pitch, biases, what to cut, mentoring a junior/senior, skeptical questions |
-| [Data attribution](DATA-ATTRIBUTION.md) | Provider licenses, notices and source-provenance limitations |
-| [Browser tests](../tests/e2e/README.md) | Deterministic map test vs live-provider smoke test |
+| Why Next.js, Python, static JSON, and no database? | [Architecture: stack and scope](ARCHITECTURE.md#architecture-and-why-the-stack-is-this-small) |
+| Why the custom MapLibre worker setup? | [Architecture: MapLibre 6 worker](ARCHITECTURE.md#why-we-own-a-maplibre-worker-preparation-script) |
+| What do the map data and radius *not* guarantee? | [Architecture: data limits](ARCHITECTURE.md#data-correctness-provenance-and-licensing) · [Review findings](REVIEW-FINDINGS.md) |
+| What is actually tested, audited, and deployed? | [Quality: verification](QUALITY.md#verification-what-ci-does-and-does-not-establish) |
+| How does AI fit without outsourcing judgment? | [AI-assisted workflow](AI-WORKFLOW.md) |
+| What would we fix, defer, or refuse to build next? | [Product: next steps](PRODUCT.md#what-id-do-next-and-what-i-would-refuse-to-add) · [Review findings](REVIEW-FINDINGS.md) |
 
-## Appropriate effort, not universal ceremony
+## Why this much documentation?
 
-This project is both a real personal decision aid and an educational take-home. I enjoy iterating on a product and understanding why something does or does not work. **I would not ordinarily produce this degree of process and review material for a tiny app by default.** The extra scrutiny is useful here because it exposes product and engineering tradeoffs in an interview. The rule is still to earn each added test, dependency, or abstraction by a credible failure mode or user benefit. This repository's detailed documentation should never be mistaken for the product itself.
+This is a real personal decision aid **and** an educational take-home. I enjoy using a working product to discover mistakes and improve it, including the engineering process. I **wouldn't routinely apply this much documentation or CI ceremony to a tiny app**. Here, it provides an inspectable record of decisions and tradeoffs for a technical conversation. More process still needs to earn its cost.
 
-The findings register distinguishes **implemented**, **partially addressed**, **accepted**, and **still to verify**. It is not a release log.
+A finding marked **implemented** means there's code and some stated evidence, not a blanket claim of production readiness, security, or accessibility conformance.
