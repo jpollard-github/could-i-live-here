@@ -56,3 +56,21 @@ A small read-only mapping product: cost/benefit decisions, source-data limits, l
 **Performance assumptions (not measurements):** 424 places across two cities and a ~181 KiB JSON source file are small enough for in-memory filtering and client-side rendering on typical devices. This is a reason to *expect* reasonable performance, not a benchmark. 109 matching dots on a map can be unusable even if rendering them is fast. Test real mobile hardware and slow networks before promising performance; optimize only measured bottlenecks. No need for microservices or load testing of a nonexistent backend.
 
 **Deployment:** Vercel can deploy the app. Do not confuse “it is live” with “it passed a release checklist.” Before submission, verify the exact production URL and commit, `/api/health` response, meaningful map interactions, browser console, small viewport, and source/attribution links.
+
+## Version choices and why we are not upgrading tonight
+
+- **`packageManager: pnpm@10.20.0`:** the exact version pin is for repeatable local/CI installs, not a declaration that 10 is the best major version. pnpm 12 is available (see the [12.0 migration notes](https://pnpm.io/blog/releases/12.0)). Updating the tool requires intentionally reviewing configuration/lockfile changes and running the complete checks. Changing the manifest string alone is not a migration.
+- **TypeScript `^5.8.3`:** this was the original stable baseline, not a purposeful long-term compatibility ceiling. TypeScript 7 is now available ([announcement](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)). The range in `package.json` can advance within 5.x; the lockfile pins the actual resolved version. Test current Next.js, ESLint, and Node compatibility before upgrading major versions. There is no user-visible feature currently waiting on TypeScript 7.
+- **MapLibre `^6.19.0`:** this release repaired a reported security problem in an earlier range. A tested worker-loading workaround is more honest than silently downgrading. Its version is resolved by pnpm; the build script reads the *installed* MapLibre version.
+
+## Why we own a MapLibre worker preparation script
+
+MapLibre 6 runs an ES module worker for geographic processing. `setWorkerUrl()` is the [supported API](https://maplibre.org/maplibre-gl-js/docs/API/functions/setWorkerUrl/); the [v5→v6 migration notes](https://maplibre.org/maplibre-gl-js/docs/guides/v5-to-v6-migration-guide/) explain why bundlers may require explicit handling. Next.js/Turbopack failed to package the worker correctly here. `predev` and `prebuild` copy the installed version's worker to a versioned, same-origin public path and fail early if it is missing. An end-to-end test checks worker startup, not merely the presence of a `<canvas>`.
+
+**What we own:** a roughly two-dozen-line packaging script, a stable URL convention, build/hosting compatibility, browser-worker regressions, and reevaluation when MapLibre or Next.js changes. **What we do not own:** the worker's implementation or tile serving. This isn't an abstraction for its own sake: it was added after a real blank-map regression.
+
+**Alternatives:** Leaflet plus raster tiles would avoid MapLibre's vector-tile worker, but that also changes the styling/basemap approach and requires rewriting a working map interaction. Another MapLibre wrapper is still likely to depend on the same worker machinery. A bundler-resolved `new URL(...)` may become simpler if verified against production builds. The correct migration threshold is a demonstrated net reduction in maintenance, not frustration with one integration bug.
+
+## Which features genuinely need to be discoverable?
+
+The product should make A/B meaning, the selected radius (straight line), data age, result selection, comparison, and known data limitations obvious in context. It should **not** make package-manager versions, CI internals, AI tools, or raw provider taxonomy prominent in the map UI; those belong in docs. Missing but material: accurate provider attribution/NOTICE after provenance refresh, explaining the coverage boundary in a non-punitive way, and larger readable labels.

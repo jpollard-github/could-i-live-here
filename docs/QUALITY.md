@@ -124,3 +124,15 @@ For now, use a short-lived branch and open a PR to main for a real reviewable di
 ## Keyboard and coverage safeguards
 
 The keyboard pin-placement dialog was removed after testing: it obscured the map and did not provide a clear interaction. Presets and other form controls remain keyboard-usable; arbitrary pin placement is still a documented accessibility gap (F-03). The data-edge warning appears if any part of the geodesic search circle lies outside a city’s downloaded bounding box. **Reproduce F-05:** select A / Smith Crossing, set 3 mi, observe the warning; return to 0.5 mi and it disappears. This is a warning about geographic coverage, not proof that all real places in the box are mapped.
+
+## Why `LIVE_MAP_STYLE=1` exists
+
+Despite its name, **it is not the default**. `pnpm test:e2e` uses a deterministic locally supplied map style and GeoJSON lines, so tests can verify MapLibre's worker, camera and UI even if OpenFreeMap has an outage. `pnpm test:e2e:live` sets `LIVE_MAP_STYLE=1` to stop intercepting the external style and try the real third-party map service. That smoke check depends on the network and is intentionally separate from the default CI gate. This is a test setting, not an application configuration toggle. It might be renamed for clarity if test configuration is revisited, but renaming it now would be cosmetic churn.
+
+## CI time and maintenance budget
+
+GitHub Actions uses a fresh `ubuntu-24.04` hosted runner. It does **not** download a full Ubuntu operating-system image as an additional step. Playwright's `install --with-deps` *does* download browser binaries and request the Linux libraries needed by its browser. The PR runner cannot reuse a locally installed Chrome. The CI configuration now requests **only Chromium's headless shell**; this matches the current test launch (`headless=True` without a Chrome channel), and avoids downloading the larger headed Chromium binary. The `--with-deps` part remains for portability. This is a potential saving, not a verified speedup: actual timings need a completed Actions run.
+
+A second small improvement is cancellation of obsolete in-progress runs on the **same PR ref**, without canceling push-to-main or scheduled runs. The two workflows still duplicate some setup; no cache or third workflow was added just to improve a single late-night build. If browser setup remains expensive, options include running Chromium only on main/manual demand and keeping cheap PR checks; that intentionally shifts detection of UI regressions later and should be a conscious choice.
+
+Cost/benefit: the browser regression suite earned its place after the MapLibre incident. CodeQL on every PR, two independent workflow files, a health endpoint, and the number of documents are more defensible as a take-home learning exercise than as mandatory process for a two-town static read-only app. A high-signal small suite beats a full testing taxonomy. Do not claim that a successful deterministic browser test proves live tiles are available.

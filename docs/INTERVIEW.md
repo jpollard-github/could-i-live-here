@@ -31,7 +31,7 @@ Google Maps is excellent for finding individual places. This product is a delibe
 
 The deployment platform and my working familiarity made it cheap to ship. It provides typed React, routing and production builds. Vite would also be valid and possibly simpler; I would migrate only if the framework's ongoing costs justify it. I have not invented a server architecture to make Next.js seem necessary.
 
-**“You used two languages for 483 records?”**
+**“You used two languages for 424 records?”**
 
 One language runs the browser application; Python only prepares and reviews data offline. The Overture CLI eliminates building and maintaining my own data download path. The additional Python toolchain is a cost, documented and tested. It's not automatically the right choice at every future scale.
 
@@ -41,7 +41,7 @@ It counts selected categories with at least one mapped match, not neighborhood q
 
 **“If the circle overlaps the boundary of your downloaded data, aren't the results misleading?”**
 
-Yes, potentially. The app checks the entire search circle against the downloaded box and flags partial coverage in the map and the relevant comparison card. Results are intentionally still shown, with an explicit caveat. That only addresses extract boundaries, not missing businesses within the extract.
+Yes, potentially. The app checks the entire search circle against the downloaded box and flags partial coverage in the map and the relevant comparison card. Results are intentionally still shown, with an explicit caveat. That only addresses extract boundaries, not missing businesses within the extract. **It is not a satisfying UX** when a sample plus a provided radius immediately triggers the warning. F-05 remains open until the extract and preset/radius choices are designed together.
 
 **“Can a keyboard-only user move the pin?”**
 
@@ -74,3 +74,43 @@ One authentic user need, one implemented prototype, and observed interaction cha
 **“What did AI do? What did *you* do?”**
 
 AI supported implementation and design review. The product definition, user-specific feedback, rejection of wrong defaults, scope decisions, evaluation of the result, and acceptance of code changes remain human responsibilities. The artifacts, tests, and tradeoffs are inspectable. Authorship of every individual line is less relevant than whether I can explain, verify, and change it.
+
+## What I would cut, keep, or simplify
+
+| Choice | Decision | Why |
+| --- | --- | --- |
+| Two-town static extract and pure comparison functions | **Keep** | Cheapest sufficient architecture for actual need |
+| MapLibre worker preparation + narrow worker regression test | **Keep** | Corrects an observed production-like breakage |
+| Python ingestion tool | **Keep for now** | Reuses Overture tooling and doesn't ship to Vercel; two-language cost is real |
+| Full browser suite on each PR | **Reevaluate** | Valuable coverage, but runner provisioning time may exceed the value for a solo demo |
+| Separate security workflow, CodeQL, PR template | **Educational / optional** | Valuable to know; not a standing requirement for every small one-person project |
+| Next.js health route | **Question** | It reports snapshot availability, but creates a server endpoint for mostly static content |
+| Repository export skill | **Keep as an opt-in development aid** | Useful for selective AI review; still requires human inspection for secrets |
+| Long technical docs | **Keep out of the primary path** | Short README and actual deployed behavior matter most to the evaluator |
+| Arbitrary keyboard pin positioning | **Defer** | Prior experiment impaired UX; presets remain keyboard accessible; do not claim full parity |
+| Persistent accounts, database, ranking engine, daily ingestion | **Do not add** | No evidence they solve a user problem yet |
+
+**A stopping rule:** a new change needs an observed user problem, credible failure mode, or testable reviewer concern. “A senior project should have it” is not a reason. If another hour of ceremony doesn't improve the user decision or a meaningful risk, stop.
+
+## Mentoring someone who joins this repository
+
+**Junior engineer.** Start with the 31-line README and the live product, not a lecture on our architecture. Have them run `pnpm dev`, select a sample and filter, then trace one place through `data/places.json` → category assignment → distance function → result row. Pair on one small bug, identify a test at the appropriate layer, review naming/data assumptions, and ask them to explain what *they* observed. Protect them from CI folklore and irrelevant infrastructure.
+
+**Senior engineer.** Give them an outcome rather than a task list: “A curated sample at a supported radius should never advertise missing data.” Ask for alternatives (buffer the extraction, restrict presets/radii, visualize limits), evidence, tradeoffs, a scoped implementation, and how they'll validate it. Let them challenge the use of Next.js or the snapshot approach if they can show a better lifecycle cost. Review decisions and failure modes together, not their preferred formatting.
+
+**Staff-level conversation.** Define the next *thresholds* at which the architecture changes: more cities, hundreds of thousands of records, need for live hours, user-saved comparisons, or legal/source notice obligations. Discuss product impact, ownership, migration paths, and risk; don't automatically turn the demo into a platform.
+
+## Questions we should expect but hadn't made explicit
+
+1. **“You have 424 records from 6,001 raw places. What got filtered, and how do you know you didn't discard something critical?”** Be able to show taxonomy filtering and the confidence/status heuristics; acknowledge selection bias and the absence of recall validation.
+2. **“If I choose a preset and a radius, why am I warned your data isn't complete?”** Acknowledge F-05 as an unresolved UX defect, *not* a successful warning feature. Prefer extra extract margin before more warning UI.
+3. **“Who validates the Overture licensing and NOTICE files?”** Source identifiers are preserved after refresh; the actual attribution obligations must still be checked and packaged. A generic footer isn't conclusive.
+4. **“Does your browser suite verify a map I can actually see?”** Default suite verifies the worker/camera/render pipeline under a fake style. A separate live smoke probes the provider; neither substitutes for inspecting the production screen.
+5. **“Why are labels 10px? Did you test at 200% browser zoom or on a phone?”** No complete usability test; type size is an open finding (F-15). Contrast alone isn't enough.
+6. **“How long does a clean CI run take, and what is the benefit per minute?”** Measure Actions on a clean runner; browser provisioning overhead is real, and a main-only or manually triggered suite may be justified.
+7. **“Why old pnpm/TypeScript versions if you claim modern engineering?”** The exact pnpm pin supports reproducibility, but the chosen version is stale; TypeScript started on a proven earlier baseline. Migrate deliberately, including the lockfile, instead of defending age as a feature.
+8. **“What would make you delete the entire application?”** If target users already make the decision faster and with better confidence in another tool, stop. A useful prototype doesn't prove a durable product.
+9. **“Did AI write something you cannot maintain or explain?”** Walk through a change you rejected (keyboard arrow-help overlay), a regression you discovered (MapLibre worker), and a product concern you haven't yet solved (radius coverage). Demonstrate, don't assert, human review.
+10. **“Would you hire yourself for how many checks you added?”** No. The evidence is that you can recognize when a safeguard has earned its cost, remove a poor idea, and stop without losing essential quality.
+
+**What would surprise a demanding reviewer?** A clear live comparison, one real regression explained without hand-waving, and a candid unresolved-findings list. Not another colorful dashboard of checks.

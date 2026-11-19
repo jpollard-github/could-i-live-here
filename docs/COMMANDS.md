@@ -81,3 +81,7 @@ The exporter collects non-ignored repository files and screens for common secret
 - `ci.yml`: lint, types, tests, production build, and Chromium browser checks on pull requests/pushes.
 - `security.yml`: production dependency audit and CodeQL on relevant branches and weekly schedule.
 - PRs and branch protection are optional for this solo project; GitHub CI is not automatically a Vercel deployment gate.
+
+## Why GitHub browser tests can take a while
+
+The hosted Actions runner starts fresh, and the browser installer downloads Playwright's Chromium binary plus relevant Linux dependencies. The CI script now uses `python3 -m playwright install --with-deps --only-shell chromium` because our suite launches Chromium headlessly. This avoids installing the headed browser; it does **not** eliminate downloads. GitHub's run view will show whether the slow step is OS/browser installation, package installation, building Next.js, or the tests themselves. For this public repo, ordinary hosted Actions minutes are free, but elapsed setup time remains a real maintenance cost.

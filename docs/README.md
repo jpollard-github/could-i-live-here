@@ -10,7 +10,7 @@ These are **optional deep dives**, not homework for someone evaluating the produ
 | [Quality & security](QUALITY.md) | Threat model, CI/E2E test scope, MapLibre worker incident, commands, unverified claims |
 | [Review findings](REVIEW-FINDINGS.md) | Living issue register with decisions, remaining risks and evidence |
 | [AI-assisted workflow](AI-WORKFLOW.md) | How editor AI and broader ChatGPT review fit into human selection and verification |
-| [Interview notes](INTERVIEW.md) | Thirty-second pitch, potential biases, skeptical questions with concrete answers |
+| [Interview notes](INTERVIEW.md) | Thirty-second pitch, biases, what to cut, mentoring a junior/senior, skeptical questions |
 | [Data attribution](DATA-ATTRIBUTION.md) | Provider licenses, notices and source-provenance limitations |
 | [Browser tests](../tests/e2e/README.md) | Deterministic map test vs live-provider smoke test |
 

@@ -43,3 +43,9 @@ Valid asks for a **deployed, useful application** using Overture data and a repo
 **If useful after user feedback:** allow multiple saved B candidates, clarify matched-category counts, refine data-coverage notices and investigate a genuinely usable keyboard pin-placement flow from user testing, and perhaps show user-defined priorities. Measure whether users really need these first.
 
 **Not now:** full GIS backend, distributed jobs, multi-region database, OAuth, AI recommendations, LLM agents, Kubernetes, container registry, SonarQube server, synthetic 80% coverage targets, load-test dashboard, release train, or automatic daily ingestion. These would be engineering outputs without evidence they improve this small product.
+
+## Two product issues to address before submission
+
+**F-05: the app should not offer a trap.** The data-boundary warning is technically truthful, but selecting a *curated* sample area and an *offered* radius should not immediately produce an incomplete comparison. The current warning demonstrates a data-ingestion/UX contract failure, not a satisfactory product state. Preferred next experiment: extend the offline extraction bounding boxes with enough margin to cover every sample preset at the maximum offered radius, retain a check for arbitrary user-dragged points near data limits, and consider drawing a light data-boundary outline only when relevant. Verify counts still behave sensibly. Do not simply suppress the warning: that would restore silent missing data.
+
+**F-15: readable typography matters more than density.** Multiple controls, place details, and metadata use 10–12px text. Even with improved contrast, that is hard to read. A later typography pass should target readable body sizes around 14–16px, protect labels from wrapping awkwardly, and test browser text zoom and narrow screens. No global font-size change is part of this documentation round.

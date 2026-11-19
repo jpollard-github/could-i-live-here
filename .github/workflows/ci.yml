@@ -6,6 +6,9 @@ on:
     branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   checks:
     runs-on: ubuntu-24.04
@@ -29,7 +32,7 @@ jobs:
       - name: Install browser-test tooling
         run: |
           python3 -m pip install -r requirements-e2e.txt
-          python3 -m playwright install --with-deps chromium
+          python3 -m playwright install --with-deps --only-shell chromium
       - name: Browser tests against production build (offline map fixture)
         run: |
           corepack pnpm start --hostname 127.0.0.1 --port 3000 > /tmp/could-i-live-here-next.log 2>&1 &
