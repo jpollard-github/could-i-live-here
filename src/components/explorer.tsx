@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect, useRef, type CSSProperties } from "react";
+import { useMemo, useState, useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
 import { nearbyByCategory, essentialsCount, type CategoryResult } from "@/lib/derive";
@@ -31,7 +31,6 @@ const PRESETS: Record<CityId, readonly Preset[]> = {
   ],
 };
 const RADII = [0.5, 1, 2, 3] as const;
-const TOUR_SEEN_KEY = "could-i-live-here-tour-v1";
 
 function presetSpot(cityId: CityId, preset: Preset): Spot {
   return { ...preset, cityId };
@@ -50,23 +49,6 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
   const [cameraRevision, setCameraRevision] = useState(0);
   const [tourOpen, setTourOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-
-  useEffect(() => {
-    // Defer until after hydration, avoiding server/client content disagreement.
-    const frame = window.requestAnimationFrame(() => {
-      try {
-        if (window.localStorage.getItem(TOUR_SEEN_KEY) !== "seen") setTourOpen(true);
-      } catch {
-        // Private browsing / disabled storage: the tour remains available manually.
-      }
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  const closeTour = useCallback(() => {
-    setTourOpen(false);
-    try { window.localStorage.setItem(TOUR_SEEN_KEY, "seen"); } catch { /* Optional preference only. */ }
-  }, []);
 
   const cityFor = (side: Side): CityData => dataset.cities.find((item) => item.id === spots[side].cityId) ?? dataset.cities[0];
   const cityA = cityFor("A");
@@ -155,7 +137,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
                 const spot = spots[side];
                 return <button type="button" key={side} className={`anchor-card ${activeSide === side ? "active" : ""}`} onClick={() => activate(side)} aria-pressed={activeSide === side}>
                   <span className={`anchor-card-badge ${side === "B" ? "b-badge" : ""}`}>{side}</span>
-                  <span><strong>{side === "A" ? "Where I live now" : "A possible move"}</strong><small>{spot.label}</small></span>
+                  <span><strong>{side === "A" ? "Your current area" : "A possible move"}</strong><small>{spot.label}</small></span>
                   <span className="anchor-view">{activeSide === side ? "On map" : "View"}</span>
                 </button>;
               })}
@@ -188,7 +170,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
                 style={{ "--category-color": category.color } as CSSProperties}
               ><span className="chip-swatch" aria-hidden="true" /><span aria-hidden="true">{category.symbol}</span><span>{category.label}</span></button>)}
             </div>
-            <div className="radius-control">
+            <div className="radius-control" data-walkthrough="radius">
               <span className="control-label">STRAIGHT-LINE RADIUS</span>
               <div className="radius-options" role="group" aria-label="Search radius">
                 {RADII.map((value) => <button key={value} type="button" className={radius === value ? "chosen" : ""} onClick={() => setRadius(value)} aria-pressed={radius === value}>{value} mi</button>)}
@@ -213,7 +195,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
             </div>
             {selected.length === 0 ? <div className="empty-state"><strong>Start with one essential.</strong><span>Choose a colored category on the left. We&apos;ll show its matches for A and B, with all places available to browse.</span></div> : (
               <div className="result-grid is-comparing">
-                <ResultsCard title="Where Jason lives now" anchor={spots.A} city={cityA} results={resultsA} categoryCount={selected.length} letter="A" onFocus={(place) => focusPlace("A", place)} onView={() => activate("A")} focusedId={focused?.side === "A" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityA.places.length > 0} active={activeSide === "A"} />
+                <ResultsCard title="Current area" anchor={spots.A} city={cityA} results={resultsA} categoryCount={selected.length} letter="A" onFocus={(place) => focusPlace("A", place)} onView={() => activate("A")} focusedId={focused?.side === "A" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityA.places.length > 0} active={activeSide === "A"} />
                 <ResultsCard title="A possible move" anchor={spots.B} city={cityB} results={resultsB} categoryCount={selected.length} letter="B" onFocus={(place) => focusPlace("B", place)} onView={() => activate("B")} focusedId={focused?.side === "B" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityB.places.length > 0} active={activeSide === "B"} />
               </div>
             )}
@@ -223,7 +205,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
         <section className="lower-note"><span className="asterisk">✳</span><div><h2>A useful answer beats a magical score.</h2><p>Browse every mapped match, not an arbitrary top three. We show straight-line proximity, not quality or convenience. &ldquo;Restaurants&rdquo; is separate from fast food and cafés, but Overture cannot reliably tell independently owned places from chains.</p></div></section>
       </main>
       <footer className="footer"><span>MADE FOR CURIOUS MOVERS. <a href="https://jasonpollard.com" target="_blank" rel="noreferrer">BY JASON POLLARD</a></span><span>Places © <a href="https://overturemaps.org" target="_blank" rel="noreferrer">Overture Maps</a> · Basemap by <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://docs.overturemaps.org/guides/places/" target="_blank" rel="noreferrer">About the data</a></span><span>{dataset.generatedAt ? `Extracted ${new Date(dataset.generatedAt).toLocaleDateString("en-US", { timeZone: "UTC" })}` : "Awaiting source extract"}</span></footer>
-      {tourOpen && <Walkthrough onClose={closeTour} />}
+      {tourOpen && <Walkthrough onClose={() => setTourOpen(false)} />}
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>
   );

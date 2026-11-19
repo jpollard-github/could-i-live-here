@@ -9,7 +9,7 @@ The product promise: compare a Kernersville reference (A) against Lexington cand
 - Fast food and restaurants are separate filters; the seven category colors must agree between filters, map, and lists. Do not label restaurants locally owned without ownership data.
 - Use exact Overture `basic_category`/`taxonomy` tokens. The old `categories` field was removed in September 2026. Avoid substring-based classifiers (`car_park` is not `park`). Keep `src/lib/categories.ts` and `scripts/export_overture.py` in sync.
 - Every distance is straight-line, not road network, drive time, or walk time.
-- Keep no personal location histories, cookies, user accounts, API keys, or third-party analytics. The one localStorage key is solely a dismissed-first-visit walkthrough preference, not user map data. In operational logs, never include a user's clicked coordinates or names.
+- Keep no personal location histories, cookies, localStorage preferences, user accounts, API keys, or third-party analytics. The tour opens **only on user request**, not on the first visit. In operational logs, never include a user's clicked coordinates or names.
 - Simple keyboard-usable controls, clear empty/error states, responsive layout, and readable contrast take priority over animation. The optional tour must always be dismissible and replayable; the rationale dialog must remain readable on narrow screens.
 - Sample-area selection must recenter the map and circle even while tiles are loading. Do not gate camera movement on `map.isStyleLoaded()`. Keep direct place inspection separate from A/B pin placement.
 - Prefer small pure functions with focused tests. Do not add dependencies just for a helper.
@@ -30,12 +30,12 @@ No address geocoder, third-party home-listing integration, route engine, "livabi
 
 ## Project context and AI collaboration
 
-The app addresses a real Kernersville-to-Lexington move, not an invented housing listing workflow. Explain the case in the optional walkthrough and the compact “Why this exists” dialog, without turning the core interface into an AI-generated dashboard.
+The app was motivated by a real Kernersville-to-Lexington comparison, not a listing service. Keep the app and tutorial user-centric and second-person; identify the author only in the byline, not as a character in the comparison. Keep the rationale dialog compact.
 
-Python is deliberately limited to offline Overture CLI extraction and the optional review-export script. TypeScript handles the deployed app; no Python service or database is warranted. Keep that cost/benefit rationale in README.
+Python is deliberately limited to offline Overture CLI extraction and the optional review-export script. TypeScript handles the deployed app; no Python service or database is warranted. Keep the short rationale in README; depth belongs in `docs/ARCHITECTURE.md`.
 
 Developer workflow is selective: in-editor Codex/AI for code tasks; ChatGPT/general AI for product direction, larger changes and review via the repo-export skill. The engineer chooses what to delegate and reviews changes; never imply a completely automated coding or submission process.
 
 ## Engineering review / unverified claims
 
-Read [`docs/ENGINEERING-REVIEW.md`](docs/ENGINEERING-REVIEW.md) before asserting production readiness, security clearance, or accessibility conformance. Prefer a concrete failure mode and a verified test over generic CI tooling. Do not say that CI success gates Vercel production deployments without checking branch protection/deployment settings. Do not claim `pnpm repo:export` is secret scanning; inspect its ZIP before uploading.
+Read [`docs/README.md`](docs/README.md) and [`docs/REVIEW-FINDINGS.md`](docs/REVIEW-FINDINGS.md) before asserting production readiness, security clearance, or accessibility conformance. Prefer a concrete failure mode and a verified test over generic CI tooling. Do not say that CI success gates Vercel production deployments without checking branch protection/deployment settings. Do not claim `pnpm repo:export` is secret scanning; inspect its ZIP before uploading.

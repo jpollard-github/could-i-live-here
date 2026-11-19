@@ -6,38 +6,44 @@ const STEPS = [
   {
     target: "intro",
     kicker: "THE REASON",
-    title: "A real move. A useful question.",
-    copy: "Jason is moving to Lexington, and could use some help figuring out exactly where. He wants to see what he currently has available in Kernersville and what the possibilities are in Lexington.",
+    title: "A move. An everyday question.",
+    copy: "Imagine you're considering a move from Kernersville to Lexington. What everyday places would you gain or lose? Compare your current neighborhood with possible new ones, using real mapped places.",
   },
   {
     target: "anchors",
     kicker: "01 · THE TWO PINS",
     title: "A is now. B is maybe.",
-    copy: "A represents the neighborhood around where Jason lives today. B is a possible new area in Lexington. Select either card to see that location on the map.",
+    copy: "A is your current-area reference in Kernersville. B is a possible area in Lexington. Select either card to see it on the map; both stay in the comparison below.",
   },
   {
     target: "sample",
     kicker: "02 · FIND YOUR SPOT",
     title: "Start with a sample area.",
-    copy: "Switch between Lexington sample areas or click an empty spot on the map to place the pin. Changing a sample area recenters the map and its circle.",
+    copy: "Choose a sample area to move the pin and recenter the map. Or click empty map space to choose your own spot. These are examples, not home listings.",
   },
   {
     target: "essentials",
     kicker: "03 · WHAT MATTERS",
     title: "You choose the essentials.",
-    copy: "Nothing is preselected. Turn on groceries, parks, restaurants, or whichever places matter to you. Change the radius if half a mile feels too small.",
+    copy: "Nothing starts selected. Turn on groceries, parks, restaurants, or whichever everyday places matter to you. The colors match their dots and result lists.",
+  },
+  {
+    target: "radius",
+    kicker: "04 · THE RADIUS",
+    title: "How far is nearby?",
+    copy: "Start with a half-mile radius or choose a larger one. The dashed circle is a straight-line distance from the pin, not a walking or driving route.",
   },
   {
     target: "map",
-    kicker: "04 · ON THE GROUND",
+    kicker: "05 · ON THE GROUND",
     title: "Read the map, not a score.",
-    copy: "The dashed circle shows straight-line distance. Hover over colored dots for names; click one to inspect it. Drag A or B to try a different location.",
+    copy: "Hover over colored dots for names; click one to inspect it. Drag A or B to try a different location. Place listings may be incomplete or out of date.",
   },
   {
     target: "comparison",
-    kicker: "05 · THE COMPARISON",
+    kicker: "06 · THE COMPARISON",
     title: "Now decide for yourself.",
-    copy: "Both locations appear below the map once you choose a category. Browse every mapped place, compare their distances, and decide which tradeoffs matter. No invented livability score.",
+    copy: "Both locations appear below the map once you choose a category. Browse every mapped place, compare distances, and decide which tradeoffs matter. No invented livability score.",
   },
 ] as const;
 

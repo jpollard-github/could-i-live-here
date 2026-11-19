@@ -81,7 +81,6 @@ class ExplorerBrowserTests(unittest.TestCase):
 
     def setUp(self):
         self.context = self.browser.new_context(viewport={"width": 1380, "height": 900})
-        self.context.add_init_script("localStorage.setItem('could-i-live-here-tour-v1', 'seen')")
         self.page = self.context.new_page()
         self.workers = []
         self.page.on("worker", lambda worker: self.workers.append(worker.url))
@@ -120,7 +119,7 @@ class ExplorerBrowserTests(unittest.TestCase):
             "data-map-center-lng", re.compile(r"-80\.28"), timeout=8000)
         self.assertAlmostEqual(self.map_center()[1], -80.282, delta=0.015)
         # A remains independently selectable and must jump to Kernersville.
-        self.page.get_by_role("button", name=re.compile("Where I live now")).click()
+        self.page.get_by_role("button", name=re.compile("Your current area")).click()
         expect(self.page.locator(".map-heading-label")).to_contain_text("KERNERSVILLE")
         expect(self.page.locator(".map-shell[data-map-ready='true']")).to_be_visible(timeout=25000)
         self.assertAlmostEqual(self.map_center()[0], 36.0745, delta=0.015)
@@ -139,11 +138,23 @@ class ExplorerBrowserTests(unittest.TestCase):
         self.page.get_by_role("button", name=re.compile("1 mi", re.I)).first.click()
         expect(self.page.locator(".map-hint")).to_contain_text("1 mi")
 
-    def test_tour_replay_and_dismiss(self):
+    def test_tour_is_opt_in_and_radius_has_its_own_step(self):
+        tour = self.page.locator(".tour-panel")
+        expect(tour).to_have_count(0)  # Fresh visitor, no surprise overlay.
         self.page.get_by_role("button", name="Take the tour").click()
-        expect(self.page.get_by_text("Jason is moving to Lexington", exact=False)).to_be_visible()
+        expect(tour).to_contain_text("considering a move from Kernersville to Lexington")
+        # Intro -> A/B -> sample area -> essentials -> radius (fifth of seven).
+        for _ in range(4):
+            tour.get_by_role("button", name=re.compile("Next")).click()
+        expect(tour).to_contain_text("How far is nearby?")
+        expect(tour).to_contain_text("5 of 7")
+        expect(self.page.locator('[data-walkthrough="radius"]')).to_have_count(1)
         self.page.keyboard.press("Escape")
-        expect(self.page.get_by_text("Jason is moving to Lexington", exact=False)).to_have_count(0)
+        expect(tour).to_have_count(0)
+        self.page.get_by_role("button", name="Take the tour").click()
+        expect(tour).to_contain_text("A move. An everyday question.")
+        tour.get_by_role("button", name="Skip tour").click()
+        expect(tour).to_have_count(0)
 
 
 if __name__ == "__main__":
