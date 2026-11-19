@@ -68,7 +68,8 @@ export function Walkthrough({ onClose }: { onClose: () => void }) {
       const box = node.getBoundingClientRect();
       setTarget({ top: box.top, left: box.left, width: box.width, height: box.height, bottom: box.bottom, right: box.right });
     };
-    node?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    // Tour navigation jumps to the next section; the global smooth-scroll style must not take over.
+    node?.scrollIntoView({ behavior: "instant", block: "center" });
     measure();
     window.addEventListener("scroll", measure, { passive: true });
     window.addEventListener("resize", measure);

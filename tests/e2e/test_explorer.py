@@ -140,6 +140,18 @@ class ExplorerBrowserTests(unittest.TestCase):
 
     def test_tour_is_opt_in_and_radius_has_its_own_step(self):
         tour = self.page.locator(".tour-panel")
+        # Record the tour's scroll instructions; the global page CSS uses smooth
+        # scrolling, but stepping through the tour should jump immediately.
+        self.page.evaluate("""() => {
+            window.tourScrollBehaviors = [];
+            const original = Element.prototype.scrollIntoView;
+            Element.prototype.scrollIntoView = function (options) {
+                if (this.hasAttribute("data-walkthrough")) {
+                    window.tourScrollBehaviors.push(options?.behavior);
+                }
+                return original.call(this, options);
+            };
+        }""")
         expect(tour).to_have_count(0)  # Fresh visitor, no surprise overlay.
         self.page.get_by_role("button", name="Take the tour").click()
         expect(tour).to_contain_text("considering a move from Kernersville to Lexington")
@@ -149,6 +161,11 @@ class ExplorerBrowserTests(unittest.TestCase):
         expect(tour).to_contain_text("How far is nearby?")
         expect(tour).to_contain_text("5 of 7")
         expect(self.page.locator('[data-walkthrough="radius"]')).to_have_count(1)
+        self.assertEqual(self.page.evaluate("() => window.tourScrollBehaviors"), ["instant"] * 5)
+        self.assertEqual(
+            self.page.locator(".tour-spotlight").evaluate("node => getComputedStyle(node).transitionDuration"),
+            "0s",
+        )
         self.page.keyboard.press("Escape")
         expect(tour).to_have_count(0)
         self.page.get_by_role("button", name="Take the tour").click()
