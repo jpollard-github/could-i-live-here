@@ -138,22 +138,24 @@ class ExplorerBrowserTests(unittest.TestCase):
         self.page.get_by_role("button", name=re.compile("1 mi", re.I)).first.click()
         expect(self.page.locator(".map-hint")).to_contain_text("1 mi")
 
-    def test_keyboard_pin_controls_and_partial_coverage_notice(self):
-        self.page.get_by_role("button", name="Keyboard help / move pin").click()
-        dialog = self.page.get_by_role("dialog", name=re.compile("Place your B pin"))
-        expect(dialog).to_be_visible()
-        before = dialog.locator(".keyboard-coordinates").inner_text()
-        self.page.keyboard.press("ArrowRight")
-        expect(dialog.locator(".keyboard-coordinates")).not_to_have_text(before)
-        # MapLibre should remain functional after a keyboard-induced pin change.
-        expect(self.page.locator(".map-shell")).to_have_attribute("data-map-ready", "true")
-        self.page.keyboard.press("Escape")
-        expect(dialog).not_to_be_visible()
-        expect(self.page.get_by_role("button", name="Keyboard help / move pin")).to_be_focused()
-        # 3 miles around Smith Crossing crosses Kernersville's southern extract edge.
+    def test_radius_boundary_warning_comes_and_goes(self):
+        # Smith Crossing's 3-mile circle extends past the downloaded Kernersville
+        # southern boundary; the default half-mile radius does not.
         self.page.get_by_role("button", name=re.compile("Your current area")).click()
+        expect(self.page.locator(".coverage-warning")).to_have_count(0)
         self.page.get_by_role("button", name=re.compile(r"^3 mi$")).click()
         expect(self.page.locator(".coverage-warning")).to_contain_text("Partial map-data coverage")
+        expect(self.page.locator(".results-card").first.locator(".coverage-note")).to_contain_text("Partial coverage")
+        self.page.get_by_role("button", name=re.compile(r"^0\.5 mi$")).click()
+        expect(self.page.locator(".coverage-warning")).to_have_count(0)
+
+    def test_explanation_is_six_short_sections(self):
+        self.page.get_by_role("button", name=re.compile("Why this exists")).click()
+        dialog = self.page.get_by_role("dialog", name="Why this exists.")
+        expect(dialog).to_be_visible()
+        expect(dialog.locator(".decision-columns section")).to_have_count(6)
+        self.page.keyboard.press("Escape")
+        expect(dialog).not_to_be_visible()
 
     def test_tour_is_opt_in_and_radius_has_its_own_step(self):
         tour = self.page.locator(".tour-panel")
@@ -172,6 +174,16 @@ class ExplorerBrowserTests(unittest.TestCase):
         expect(tour).to_have_count(0)  # Fresh visitor, no surprise overlay.
         self.page.get_by_role("button", name="Take the tour").click()
         expect(tour).to_contain_text("considering a move from Kernersville to Lexington")
+        expect(self.page.locator(".tour-spotlight")).to_be_visible()
+        # The visual highlight has room around the content and a clear gap to the card.
+        bounds = self.page.evaluate("""() => {
+            const spot = document.querySelector('.tour-spotlight').getBoundingClientRect();
+            const intro = document.querySelector('[data-walkthrough="intro"]').getBoundingClientRect();
+            const card = document.querySelector('.tour-panel').getBoundingClientRect();
+            return { inset: intro.left - spot.left, gap: card.top - spot.bottom };
+        }""")
+        self.assertGreaterEqual(bounds["inset"], 15)
+        self.assertGreaterEqual(bounds["gap"], 20)
         # Intro -> A/B -> sample area -> essentials -> radius (fifth of seven).
         for _ in range(4):
             tour.get_by_role("button", name=re.compile("Next")).click()

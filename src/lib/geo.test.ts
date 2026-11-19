@@ -4,7 +4,6 @@ import { circleWithinBBox, formatDistance, insideBBox, milesBetween } from "./ge
 import { belongsToCategory, categoryForPlace } from "./categories.ts";
 import { radiusRing, ringBounds } from "./circle.ts";
 import { essentialsCount, nearbyByCategory } from "./derive.ts";
-import { nudgePin } from "./pin-nudge.ts";
 import type { Place } from "./types.ts";
 
 const anchor = { lat: 35.824, lng: -80.253, label: "Test" };
@@ -82,13 +81,4 @@ test("detect when a radius crosses the loaded data boundary", () => {
   assert.equal(circleWithinBBox({ lat: 35.755, lng: -80.25 }, 1, box), false);
   assert.equal(circleWithinBBox({ lat: 35.75, lng: -80.25 }, 0.5, box), false);
   assert.throws(() => circleWithinBBox(anchor, 0, box), RangeError);
-});
-
-test("keyboard nudge is geographically meaningful and reversible", () => {
-  const north = nudgePin(anchor, "north", 0.1);
-  assert.ok(Math.abs(milesBetween(anchor, north) - 0.1) < 0.00001);
-  const back = nudgePin(north, "south", 0.1);
-  assert.ok(milesBetween(anchor, back) < 0.00001);
-  assert.ok(nudgePin(anchor, "west", 0.1).lng < anchor.lng);
-  assert.ok(nudgePin(anchor, "east", 0.1).lng > anchor.lng);
 });

@@ -4,6 +4,7 @@ These are **optional deep dives**, not homework for someone evaluating the produ
 
 | Document | When to read it |
 | --- | --- |
+| [Using the repository / commands](COMMANDS.md) | Setup, dev, production, tests, extraction, security audit, export, and F-05 manual check |
 | [Product & UX](PRODUCT.md) | Real problem, user journey, accessibility limitations, what we deliberately cut |
 | [Architecture & data](ARCHITECTURE.md) | Why Next.js, MapLibre, static Overture JSON, and offline Python; provenance and operations |
 | [Quality & security](QUALITY.md) | Threat model, CI/E2E test scope, MapLibre worker incident, commands, unverified claims |

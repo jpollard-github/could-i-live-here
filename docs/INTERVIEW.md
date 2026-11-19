@@ -45,7 +45,7 @@ Yes, potentially. The app checks the entire search circle against the downloaded
 
 **“Can a keyboard-only user move the pin?”**
 
-Yes: the keyboard-help dialog lets them move A or B by arrows and shift-arrows (0.1 or 0.01 miles), or by selecting directional buttons. It uses native dialog keyboard/focus behavior. The path needs a real screen-reader and mobile accessibility review before claiming conformance.
+Not to arbitrary coordinates today. The initial keyboard-help modal allowed arrow-key movement but covered the map and caused confusion; it was removed. The town and sample-area selectors, A/B, categories and radii work with a keyboard. A genuinely useful precise-placement alternative requires design and actual keyboard/screen-reader testing, not just more controls.
 
 **“How did you verify the app, not just your math?”**
 
@@ -65,7 +65,7 @@ None is required to solve the demonstrated user problem. I would add a tool when
 
 **“What would you do if you had another afternoon?”**
 
-First, exercise the new keyboard control with a real screen reader and verify the production security workflow; then refresh the extract to retain provenance, review the applicable license notices, and test mobile interaction and live tiles. I wouldn't add features before those reliability gaps are understood.
+First, verify the production security workflow and test mobile interaction and live tiles. Review licenses/notices for the newly refreshed source identifiers. Then design and test an unobtrusive keyboard-only pin placement option rather than adding another modal. I wouldn't add features before those reliability gaps are understood.
 
 **“What's your evidence that people want this?”**
 

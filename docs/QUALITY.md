@@ -17,9 +17,11 @@ What is tested, what remains unverified, the threat model, and how to reproduce 
 | Data provenance | Committed normalized snapshot and source name | Future extracts preserve compact `sources[]`; current checked-in data lacks provenance. Review licenses/notices before wider redistribution |
 | Client-side errors | `console.error` structured event with broad type, no coordinates | Not centralized monitoring; errors may go unnoticed |
 
-**What I actually reviewed:** `src/components/explorer.tsx`, `map-panel.tsx`, `walkthrough.tsx`, `about-dialog.tsx`, `keyboard-help.tsx`, geographic/category functions, health route, scripts, package/lock files, GitHub Actions, Vercel config, and the extracted dataset structure. This was manual static inspection plus the checks described below. **Not performed:** authenticated penetration test (not applicable to this app), DAST, browser runtime fuzzing, third-party dependency audit, deployment-header inspection, or Git-history secret scan. No claim of full “secure” status is warranted.
+**What I actually reviewed:** `src/components/explorer.tsx`, `map-panel.tsx`, `walkthrough.tsx`, `about-dialog.tsx`, geographic/category functions, health route, scripts, package/lock files, GitHub Actions, Vercel config, and the extracted dataset structure. This was manual static inspection plus the checks described below. **Not performed:** authenticated penetration test (not applicable to this app), DAST, browser runtime fuzzing, third-party dependency audit, deployment-header inspection, or Git-history secret scan. No claim of full “secure” status is warranted.
 
 ## Verification: what CI does and does not establish
+
+For setup, refresh, export, and browser-test commands, see [COMMANDS.md](COMMANDS.md).
 
 The local `pnpm check` runs ESLint, TypeScript checks, Node unit/data tests, and a Next.js production build. GitHub Actions also runs Python unit tests and real Chromium/Playwright tests against a running production build. Browser tests use a deterministic basemap fixture so third-party tile outages do not randomly fail CI; they still instantiate the actual MapLibre worker. A separate optional **live** provider smoke test is available.
 
@@ -60,7 +62,7 @@ corepack pnpm repo:export
 curl -i https://could-i-live-here.vercel.app/api/health
 ```
 
-**Manual browser smoke (in addition to automated tests; not claimed passed by this document):** Fresh/private browser session: tour stays closed until requested, Escape closes, replay works; both A/B cards activate; choosing another Lexington sample area recenters the circle and pin; choose coffee + pharmacy and compare A/B counts; select an individual result, verify map focus and no pin move; change radius; drag a pin outside the loaded box and check the warning; test 360px width and 200% zoom; repeat key actions without mouse; inspect console and map-tile fallback. Note defects; do not substitute “seems okay” for the list.
+**Manual browser smoke (in addition to automated tests; not claimed passed by this document):** Fresh/private browser session: tour stays closed until requested, Escape closes, replay works; both A/B cards activate; choosing another Lexington sample area recenters the circle and pin; choose coffee + pharmacy and compare A/B counts; select an individual result, verify map focus and no pin move; change radius; drag a pin outside the loaded box and check the warning; test 360px width and 200% zoom; repeat the available form interactions without mouse and record the remaining map-pin limitation; inspect console and map-tile fallback. Note defects; do not substitute “seems okay” for the list.
 
 **Review basis:** Source inspection of the uploaded 2026-11-18 snapshot and the checks documented in this repository. Browser tests have since been added in source and CI; no claim is made here that an independent production browser run or accessibility audit was completed during this documentation-only change.
 
@@ -121,4 +123,4 @@ For now, use a short-lived branch and open a PR to main for a real reviewable di
 
 ## Keyboard and coverage safeguards
 
-The **Keyboard help / move pin** dialog supports arrow keys and smaller Shift+arrow movements; native dialog focus handling and Escape prevent the map from trapping keyboard-only users. E2E covers basic operation, but full screen-reader usability remains a manual check. The data-edge warning appears if any of the geodesic search circle lies outside the city's downloaded bounding box; this is a warning about **geographic coverage**, not a promise the Overture database contains every real place inside the circle.
+The keyboard pin-placement dialog was removed after testing: it obscured the map and did not provide a clear interaction. Presets and other form controls remain keyboard-usable; arbitrary pin placement is still a documented accessibility gap (F-03). The data-edge warning appears if any part of the geodesic search circle lies outside a city’s downloaded bounding box. **Reproduce F-05:** select A / Smith Crossing, set 3 mi, observe the warning; return to 0.5 mi and it disappears. This is a warning about geographic coverage, not proof that all real places in the box are mapped.
