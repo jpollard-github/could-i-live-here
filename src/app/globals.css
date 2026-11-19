@@ -44,21 +44,21 @@ h1 span { font-style: italic; color: var(--coral-dark); }
 .control-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 22px; }
 .step-index { color: var(--coral-dark); font-weight: 900; font-size: 11px; letter-spacing: .03em; }
 .control-head h2 { font-size: 19px; font-weight: 900; letter-spacing: -.045em; margin: 0; }
-.control-label { display: block; color: #718076; font-size: 10px; letter-spacing: .14em; font-weight: 900; margin-bottom: 8px; }
+.control-label { display: block; color: #576b60; font-size: 10px; letter-spacing: .14em; font-weight: 900; margin-bottom: 8px; }
 .town-select { width: 100%; background: var(--paper-light); border: 1px solid #cfcabf; border-radius: 6px; padding: 12px 10px; color: var(--ink); font-weight: 800; }
 .anchor-picker { display: grid; gap: 8px; }
 .anchor-card { width: 100%; display: flex; align-items: center; text-align: left; background: #fffef8; border: 1px solid #d6d0c3; border-radius: 6px; padding: 10px 9px; gap: 11px; transition: background .12s, border .12s; }
 .anchor-card:hover, .anchor-card.active { border-color: #405c4e; background: #eef4e8; }
 .anchor-card > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; flex: 1; }
 .anchor-card strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.anchor-card small { font-size: 10px; color: #718076; }
+.anchor-card small { font-size: 10px; color: #576b60; }
 .anchor-card-badge { height: 27px; width: 27px; flex: 0 0 27px; background: var(--dark); color: white; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 13px; border-radius: 4px; }
 .anchor-card-badge.b-badge { background: var(--coral-dark); }
 .text-button { padding: 3px 0; border: 0; background: none; text-decoration: underline; text-underline-offset: 3px; color: #5e6d62; font-size: 11px; }
 .section-rule { height: 1px; background: var(--line); margin: 27px 0; }
 .aside-caption { color: #68796d; font-size: 12px; line-height: 1.45; margin: -10px 0 17px; }
 .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.category-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 9px 11px; color: #6c7a6f; background: #f5f1e8; border: 1px solid #e4dfd3; border-radius: 5px; text-align: left; font-size: 12px; font-weight: 800; }
+.category-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 9px 11px; color: #576b60; background: #f5f1e8; border: 1px solid #e4dfd3; border-radius: 5px; text-align: left; font-size: 12px; font-weight: 800; }
 .category-chip .chip-swatch { flex: 0 0 9px; width: 9px; height: 19px; border-radius: 3px; background: var(--category-color); }
 .category-chip span:nth-child(2) { width: 17px; text-align: center; font-size: 15px; }
 .category-chip.selected { background: #fffefb; border-color: var(--category-color); box-shadow: inset 0 0 0 1px var(--category-color); color: #243c2f; }
@@ -67,7 +67,7 @@ h1 span { font-style: italic; color: var(--coral-dark); }
 .radius-options { display: flex; gap: 5px; }
 .radius-options button { background: var(--paper-light); padding: 9px 7px; border: 1px solid #d9d5c9; border-radius: 4px; color: #6a7a71; flex: 1; white-space: nowrap; font-size: 10px; font-weight: 900; }
 .radius-options button.chosen { background: var(--dark); border-color: var(--dark); color: white; }
-.aside-footnote { margin: 30px 0 0; padding-top: 19px; border-top: 1px solid var(--line); color: #7f847d; font-size: 11px; line-height: 1.6; }
+.aside-footnote { margin: 30px 0 0; padding-top: 19px; border-top: 1px solid var(--line); color: #56685b; font-size: 11px; line-height: 1.6; }
 .map-column { min-width: 0; }
 .map-heading { display: flex; justify-content: space-between; align-items: center; padding: 16px 21px; gap: 12px; background: #fdfbf5; }
 .map-heading-label { display: flex; align-items: center; gap: 9px; font-size: 10px; font-weight: 900; letter-spacing: .16em; }
@@ -181,7 +181,7 @@ h1 span { font-style: italic; color: var(--coral-dark); }
 .tour-panel p { margin: 0 0 20px; font-size: 13px; line-height: 1.65; color: #546c5e; }
 .tour-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #e8dfd1; padding-top: 15px; }
 .tour-progress { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.tour-count { font-size: 10px; color: #788779; font-weight: 800; }
+.tour-count { font-size: 10px; color: #576b60; font-weight: 800; }
 .tour-skip { border: 0; background: none; padding: 3px; font-size: 11px; color: #516e5d; text-decoration: underline; text-underline-offset: 3px; }
 .tour-actions { display: flex; align-items: center; gap: 9px; }
 .tour-actions button { border-radius: 5px; font-size: 12px; font-weight: 900; padding: 9px 12px; }

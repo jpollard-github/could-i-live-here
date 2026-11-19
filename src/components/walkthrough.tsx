@@ -7,7 +7,7 @@ const STEPS = [
     target: "intro",
     kicker: "THE REASON",
     title: "A real move. A useful question.",
-    copy: "Jason is moving to Lexington, and could use some help figuring out exactly where. I want to see what I currently have available in Kernersville and what the possibilities are in Lexington.",
+    copy: "Jason is moving to Lexington, and could use some help figuring out exactly where. He wants to see what he currently has available in Kernersville and what the possibilities are in Lexington.",
   },
   {
     target: "anchors",

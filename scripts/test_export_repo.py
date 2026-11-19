@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
+import tempfile
 from pathlib import Path
 import unittest
 
-from export_repo import ROOT, default_output
+from export_repo import ROOT, default_output, safe_include
 
 
 class DefaultOutputTests(unittest.TestCase):
@@ -17,3 +18,29 @@ class DefaultOutputTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExportSafetyTests(unittest.TestCase):
+    def test_obvious_secret_files_are_never_exported(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name in (".env.local", "CLIENT.pem", "deploy.key", "account.p12", "id_ed25519", "credentials.json", "service-account.json"):
+                candidate = root / name
+                candidate.write_text("placeholder", encoding="utf-8")
+                self.assertFalse(safe_include(candidate, root), name)
+            normal = root / "README.md"
+            normal.write_text("Safe example", encoding="utf-8")
+            self.assertTrue(safe_include(normal, root))
+
+    def test_symlinks_and_git_metadata_are_excluded(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "README.md").write_text("safe", encoding="utf-8")
+            link = root / "alias.txt"
+            link.symlink_to(root / "README.md")
+            self.assertFalse(safe_include(link, root))
+            git = root / ".git"
+            git.mkdir()
+            hidden = git / "config"
+            hidden.write_text("config", encoding="utf-8")
+            self.assertFalse(safe_include(hidden, root))

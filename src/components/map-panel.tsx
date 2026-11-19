@@ -33,6 +33,8 @@ export function MapPanel({ city, anchor, side, radius, cameraRevision, selected,
   const handlersRef = useRef({ onPick, onFocus });
   const propsRef = useRef({ city, anchor, radius, selected, focused });
   const [unavailable, setUnavailable] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [mapCenter, setMapCenter] = useState<Coordinate | null>(null);
 
   useEffect(() => { handlersRef.current = { onPick, onFocus }; }, [onPick, onFocus]);
   useEffect(() => { propsRef.current = { city, anchor, radius, selected, focused }; }, [city, anchor, radius, selected, focused]);
@@ -41,10 +43,15 @@ export function MapPanel({ city, anchor, side, radius, cameraRevision, selected,
     if (!containerRef.current) return;
     let disposed = false;
     let localMap: import("maplibre-gl").Map | null = null;
+    let readinessTimeout: ReturnType<typeof setTimeout> | undefined;
     async function initialize() {
       try {
         const maplibre = await import("maplibre-gl");
         if (disposed || !containerRef.current) return;
+        // MapLibre 6's default worker URL fails under Next.js 16/Turbopack:
+        // its import.meta.url is not necessarily a browser URL. predev/prebuild
+        // copy the version-matched worker into public/ before this runs.
+        maplibre.setWorkerUrl(`/vendor/maplibre-gl/${maplibre.getVersion()}/maplibre-gl-worker.mjs`);
         const initial = propsRef.current.anchor;
         const map = new maplibre.Map({
           container: containerRef.current,
@@ -53,6 +60,26 @@ export function MapPanel({ city, anchor, side, radius, cameraRevision, selected,
           zoom: 14,
         });
         mapRef.current = map;
+        // A worker can fail silently after a successful Next build. Don't leave
+        // a permanently blank map without any visible diagnostic.
+        readinessTimeout = setTimeout(() => {
+          if (disposed) return;
+          reportClientError("map_timeout", new Error("Map sources did not become ready"));
+          setUnavailable(true);
+        }, 15000);
+        const recordCamera = () => {
+          const center = map.getCenter();
+          setMapCenter({ lng: center.lng, lat: center.lat });
+        };
+        map.on("moveend", recordCamera);
+        recordCamera();
+        map.on("idle", () => {
+          if (disposed || !map.getSource("search-radius") || !map.getSource("essentials")) return;
+          if (map.isSourceLoaded("search-radius") && map.isSourceLoaded("essentials")) {
+            if (readinessTimeout) clearTimeout(readinessTimeout);
+            setReady(true);
+          }
+        });
         localMap = map;
         map.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
         hoverRef.current = new maplibre.Popup({ closeButton: false, closeOnClick: false, offset: 13 });
@@ -133,6 +160,7 @@ export function MapPanel({ city, anchor, side, radius, cameraRevision, selected,
     void initialize();
     return () => {
       disposed = true;
+      if (readinessTimeout) clearTimeout(readinessTimeout);
       hoverRef.current?.remove();
       hoveredIdRef.current = null;
       hoverRef.current = null;
@@ -168,7 +196,10 @@ export function MapPanel({ city, anchor, side, radius, cameraRevision, selected,
     if (map && focused) flyToPlace(map, focused);
   }, [focused]);
 
-  return <div className="map-shell" data-walkthrough="map">
+  return <div className="map-shell" data-walkthrough="map"
+    data-map-ready={ready ? "true" : "false"}
+    data-map-center-lat={mapCenter?.lat.toFixed(6) ?? ""}
+    data-map-center-lng={mapCenter?.lng.toFixed(6) ?? ""}>
     <div className="map-container" ref={containerRef} role="application" aria-label={`Map for location ${side}, ${city.name}. Click empty space to move ${side}, drag the ${side} pin, or click a colored dot to inspect a place.`} />
     <div className="map-hint"><span className="map-hint-dot" /> Dashed circle = {radius} mi · dots = selected essentials · drag {side} to move</div>
     {unavailable && <p className="map-warning" role="status">Some map tiles are unavailable. The place lists and comparison below still work.</p>}

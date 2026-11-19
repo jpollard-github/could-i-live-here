@@ -7,17 +7,31 @@ permissions:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Enable pnpm using Corepack
         run: corepack enable
       - name: Install dependencies
         run: corepack pnpm install --frozen-lockfile
-      - name: JavaScript lint, types, tests, production build
+      - name: JavaScript lint, types, unit tests, production build
         run: corepack pnpm check
-      - name: Python extraction tests
+      - name: Python extraction/export tests
         run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+      - name: Install browser-test tooling
+        run: |
+          python3 -m pip install -r requirements-e2e.txt
+          python3 -m playwright install --with-deps chromium
+      - name: Browser tests against production build (offline map fixture)
+        run: |
+          corepack pnpm start --hostname 127.0.0.1 --port 3000 > /tmp/could-i-live-here-next.log 2>&1 &
+          python3 -m unittest discover -s tests/e2e -p 'test_*.py' -v
+      - name: Print app log on failure
+        if: failure()
+        run: cat /tmp/could-i-live-here-next.log 2>/dev/null || true

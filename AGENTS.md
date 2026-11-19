@@ -21,6 +21,9 @@ The product promise: compare a Kernersville reference (A) against Lexington cand
 - `corepack pnpm check` (lint/typecheck/tests/build)
 - `python3 -m unittest discover -s scripts -p 'test_*.py' -v`
 - `corepack pnpm repo:export` (Git-based review ZIP, ignores local secrets)
+- `corepack pnpm test:e2e` (with app running and Playwright Python installed; deterministic browser checks)
+
+MapLibre 6 needs a module worker served from the same origin. `predev`/`prebuild` prepare it; do not remove `setWorkerUrl()` or bypass the browser tests when upgrading MapLibre.
 
 ## What was intentionally cut
 No address geocoder, third-party home-listing integration, route engine, "livability score," account storage, analytics service, scheduled ETL, GIS database, or backend place-search API. Add one only if a real user need pays for its cost.
@@ -32,3 +35,7 @@ The app addresses a real Kernersville-to-Lexington move, not an invented housing
 Python is deliberately limited to offline Overture CLI extraction and the optional review-export script. TypeScript handles the deployed app; no Python service or database is warranted. Keep that cost/benefit rationale in README.
 
 Developer workflow is selective: in-editor Codex/AI for code tasks; ChatGPT/general AI for product direction, larger changes and review via the repo-export skill. The engineer chooses what to delegate and reviews changes; never imply a completely automated coding or submission process.
+
+## Engineering review / unverified claims
+
+Read [`docs/ENGINEERING-REVIEW.md`](docs/ENGINEERING-REVIEW.md) before asserting production readiness, security clearance, or accessibility conformance. Prefer a concrete failure mode and a verified test over generic CI tooling. Do not say that CI success gates Vercel production deployments without checking branch protection/deployment settings. Do not claim `pnpm repo:export` is secret scanning; inspect its ZIP before uploading.

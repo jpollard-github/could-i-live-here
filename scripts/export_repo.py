@@ -16,6 +16,15 @@ from zipfile import ZipFile, ZIP_DEFLATED
 ROOT = Path(__file__).resolve().parent.parent
 EXPORTS_DIR = ROOT / "exports"
 HARD_EXCLUDES = {".git", "node_modules", ".next", ".vercel", "artifacts", "coverage", "__pycache__"}
+# A gitignore-aware export is NOT a credential scanner. Still refuse common
+# private-key and credential-container formats, even when someone accidentally
+# tracked them. The user must inspect the archive before sharing it.
+SENSITIVE_NAMES = {
+    "id_rsa", "id_ed25519", "id_ecdsa", "id_dsa", "credentials", "credentials.json",
+    "service-account.json", "service_account.json", ".netrc", ".git-credentials",
+}
+SENSITIVE_SUFFIXES = {".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".kdbx"}
+
 
 
 def default_output(now: datetime | None = None) -> Path:
@@ -41,7 +50,13 @@ def git_entries(root: Path) -> list[str]:
 
 def safe_include(path: Path, root: Path) -> bool:
     parts = path.relative_to(root).parts
-    if any(part in HARD_EXCLUDES for part in parts) or any(part.startswith(".env") for part in parts):
+    if any(part in HARD_EXCLUDES for part in parts):
+        return False
+    if any(part.lower().startswith(".env") for part in parts):
+        return False
+    if any(part.lower() in SENSITIVE_NAMES for part in parts):
+        return False
+    if path.suffix.lower() in SENSITIVE_SUFFIXES:
         return False
     if path.is_symlink() or not path.is_file():
         return False
@@ -60,7 +75,8 @@ def main() -> None:
     with ZipFile(target, "w", ZIP_DEFLATED, compresslevel=9) as archive:
         for name in names:
             archive.write(ROOT / name, arcname=f"could-i-live-here/{name}")
-    print(f"Exported {len(names)} unignored source files to {target} ({target.stat().st_size:,} bytes)")
+    print(f"Exported {len(names)} unignored, filtered source files to {target} ({target.stat().st_size:,} bytes)")
+    print("WARNING: Filename filters and .gitignore are not secret scanning. Review the ZIP before uploading.")
 
 
 if __name__ == "__main__":

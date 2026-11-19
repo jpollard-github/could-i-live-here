@@ -1,0 +1,3 @@
+# Browser automation runs through Python, which is already used for offline tooling.
+# Test-only dependency: never deployed to Vercel.
+playwright==1.57.0

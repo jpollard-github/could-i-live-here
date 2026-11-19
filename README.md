@@ -4,6 +4,8 @@
 
 A small, usable neighborhood explorer for somebody considering a move. **The real story:** Jason is considering leaving Kernersville for Lexington and wants to compare the everyday places near his current neighborhood with several plausible Lexington areas. Sample areas are geographic starting points, **not listings or recommendations**.
 
+**Reviewer / interview deep dive:** [Adversarial engineering review, decision record, security and accessibility limitations, and tough Q&A](docs/ENGINEERING-REVIEW.md). It distinguishes actual checks from aspirational tooling and documents the next highest-value fixes.
+
 The site includes a short first-visit walkthrough (replay with **Take the tour**) and a **Why this exists** dialog explaining the product and implementation choices. The tour can be dismissed at any step; only its dismissed/seen state is remembered locally, not the map pins or filters.
 
 By default, **A starts in the Smith Crossing area of Kernersville, NC** and **B is a downtown Lexington, NC candidate**. The A point represents the general apartment-complex area, not a verified unit/address geocode. Switch B among example areas or place either pin anywhere within the downloaded region. The supplied coordinates are **not home listings**. The user decides what matters.
@@ -36,7 +38,7 @@ corepack pnpm data:refresh
 corepack pnpm dev
 ```
 
-Open http://localhost:3000. If you installed the matching pnpm independently, replace `corepack pnpm` with `pnpm`. The environment must have internet access for the Overture CLI and basemap tiles. `data:refresh` atomically updates `data/places.json`, preserving the previous snapshot if either town fails. `.venv/` is gitignored. Never use `--break-system-packages`.
+Open http://localhost:3000. If you installed the matching pnpm independently, replace `corepack pnpm` with `pnpm`. The environment must have internet access for the Overture CLI and basemap tiles. MapLibre v6 requires a separate module worker: `predev` and `prebuild` copy the version-matched worker into ignored `public/vendor/maplibre-gl/<version>/` and `MapPanel` explicitly selects its URL. A missing worker fails the build instead of silently shipping a blank map. `data:refresh` atomically updates `data/places.json`, preserving the previous snapshot if either town fails. `.venv/` is gitignored. Never use `--break-system-packages`.
 
 ## Engineering decisions and trade-offs
 
@@ -63,12 +65,16 @@ corepack pnpm test               # Node's built-in test runner
 python3 -m unittest discover -s scripts -p 'test_*.py' -v
 corepack pnpm build              # production Next.js build
 corepack pnpm check              # all four JavaScript checks, including build
+# In another terminal, run corepack pnpm start after building.
+# Then, from the Python .venv with playwright installed:
+corepack pnpm test:e2e           # real Chromium, deterministic basemap fixture
+corepack pnpm test:e2e:live      # optional live OpenFreeMap smoke test
 corepack pnpm repo:export        # review ZIP using Git ignore rules
 ```
 
-GitHub Actions runs lint, types, tests, build, and Python extraction tests. The committed `pnpm-lock.yaml` is installed with `--frozen-lockfile`. `/api/health` returns 200 when the snapshots exist, and 503 if incomplete. Errors are logged in structured form, without user pin coordinates or search history. No cookies, accounts, analytics, API keys, user data store, or external geocoder. One `localStorage` flag remembers whether the visitor has seen/dismissed the optional walkthrough; it does **not** store chosen places, coordinates or preferences.
+GitHub Actions runs lint, types, tests (including validation of the committed source snapshot), build, Python extraction/export tests, and **Chromium/Playwright browser tests** against the built Next.js app. The browser suite stubs only the remote basemap style, leaving MapLibre's Web Worker and the application controls real. It verifies the map worker actually starts, the geography sources reach idle, selecting a new sample area moves the map, filtering shows comparisons, and the tour dismisses. An optional live-style smoke test is available locally. See [browser test rationale](tests/e2e/README.md). The committed `pnpm-lock.yaml` is installed with `--frozen-lockfile`. `/api/health` returns 200 when the snapshots exist, and 503 if incomplete. Errors are logged in structured form, without user pin coordinates or search history. No cookies, accounts, analytics, API keys, user data store, or external geocoder. One `localStorage` flag remembers whether the visitor has seen/dismissed the optional walkthrough; it does **not** store chosen places, coordinates or preferences.
 
-GitHub Actions is **automated on pushes and pull requests**, not a recurring task: it tests and builds the same code that Vercel deploys, plus Python extraction unit tests. The existing Node built-in test runner and Python `unittest` cover pure data/geometry and ETL logic without a testing framework dependency. The walkthrough and map still need human browser review (especially keyboard behavior and responsive layout).
+GitHub Actions is **automated on pushes and pull requests**, not a recurring task: it tests and builds the same code that Vercel deploys, plus Python extraction unit tests. The existing Node built-in test runner and Python `unittest` cover pure data/geometry and ETL logic without a testing framework dependency. Browser automation does not replace human review of visual details, accessibility, real tile-provider outages, responsive layout, or keyboard map navigation.
 
 ### Why two languages, and how I work with AI
 
@@ -82,7 +88,7 @@ My AI-assisted workflow is intentionally selective:
 
 More of this handoff could be automated. I don't currently want an AI agent independently sending repository content, rewriting broad areas, or merging changes without my choice and review. This process is a conscious tradeoff favoring accountable decisions over automation for its own sake.
 
-The exporter lives in `scripts/export_repo.py`; its skill documentation lives in `.agents/skills/repo-export/SKILL.md`. It includes nonignored tracked/untracked source but omits `.git`, `.venv`, installed packages, environment files and other ignored data.
+The exporter lives in `scripts/export_repo.py`; its skill documentation lives in `.agents/skills/repo-export/SKILL.md`. It includes unignored tracked/untracked source except known sensitive filename formats, and omits `.git`, `.venv`, installed packages, environment files and other ignored data. **This is not credential-content scanning:** manually inspect the archive before sharing. See the [engineering review](docs/ENGINEERING-REVIEW.md) for unresolved checks, including browser accessibility, dependency audits, deployment gating, and per-record data provenance.
 
 ## Source, attribution, and cuts
 

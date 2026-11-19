@@ -213,7 +213,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
             </div>
             {selected.length === 0 ? <div className="empty-state"><strong>Start with one essential.</strong><span>Choose a colored category on the left. We&apos;ll show its matches for A and B, with all places available to browse.</span></div> : (
               <div className="result-grid is-comparing">
-                <ResultsCard title="Where I live now" anchor={spots.A} city={cityA} results={resultsA} categoryCount={selected.length} letter="A" onFocus={(place) => focusPlace("A", place)} onView={() => activate("A")} focusedId={focused?.side === "A" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityA.places.length > 0} active={activeSide === "A"} />
+                <ResultsCard title="Where Jason lives now" anchor={spots.A} city={cityA} results={resultsA} categoryCount={selected.length} letter="A" onFocus={(place) => focusPlace("A", place)} onView={() => activate("A")} focusedId={focused?.side === "A" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityA.places.length > 0} active={activeSide === "A"} />
                 <ResultsCard title="A possible move" anchor={spots.B} city={cityB} results={resultsB} categoryCount={selected.length} letter="B" onFocus={(place) => focusPlace("B", place)} onView={() => activate("B")} focusedId={focused?.side === "B" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityB.places.length > 0} active={activeSide === "B"} />
               </div>
             )}
