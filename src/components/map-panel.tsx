@@ -13,6 +13,7 @@ type Props = {
   anchor: Anchor;
   side: Side;
   radius: number;
+  cameraRevision: number;
   selected: readonly CategoryId[];
   focused: Place | null;
   onPick: (point: Coordinate) => void;
@@ -23,7 +24,7 @@ const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 const EMPTY_GEOJSON = { type: "FeatureCollection" as const, features: [] };
 
 /** The map shows ONE location at a time; choose A/B to move between towns. */
-export function MapPanel({ city, anchor, side, radius, selected, focused, onPick, onFocus }: Props) {
+export function MapPanel({ city, anchor, side, radius, cameraRevision, selected, focused, onPick, onFocus }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("maplibre-gl").Map | null>(null);
   const markerRef = useRef<import("maplibre-gl").Marker | null>(null);
@@ -148,24 +149,26 @@ export function MapPanel({ city, anchor, side, radius, selected, focused, onPick
     const map = mapRef.current;
     if (!map) return;
     markerRef.current?.setLngLat([anchor.lng, anchor.lat]);
-    if (map.isStyleLoaded()) {
-      updateLayers(map, { city, anchor, radius, selected, focused });
-      hoverRef.current?.remove();
-      hoveredIdRef.current = null;
-    }
+    // isStyleLoaded() may be false while tiles are still downloading. The
+    // sources already exist at that point, so do not silently drop updates.
+    updateLayers(map, { city, anchor, radius, selected, focused });
+    hoverRef.current?.remove();
+    hoveredIdRef.current = null;
   }, [city, anchor, radius, selected, focused]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map?.isStyleLoaded()) fitRadius(map, anchor, radius, true);
-  }, [anchor, radius]);
+    // Camera movement doesn't require loaded map tiles or a finished style.
+    // This also honors explicit "center map" requests when coordinates haven't changed.
+    if (map) fitRadius(map, anchor, radius, true);
+  }, [anchor, radius, cameraRevision]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map && focused && map.isStyleLoaded()) flyToPlace(map, focused);
+    if (map && focused) flyToPlace(map, focused);
   }, [focused]);
 
-  return <div className="map-shell">
+  return <div className="map-shell" data-walkthrough="map">
     <div className="map-container" ref={containerRef} role="application" aria-label={`Map for location ${side}, ${city.name}. Click empty space to move ${side}, drag the ${side} pin, or click a colored dot to inspect a place.`} />
     <div className="map-hint"><span className="map-hint-dot" /> Dashed circle = {radius} mi · dots = selected essentials · drag {side} to move</div>
     {unavailable && <p className="map-warning" role="status">Some map tiles are unavailable. The place lists and comparison below still work.</p>}

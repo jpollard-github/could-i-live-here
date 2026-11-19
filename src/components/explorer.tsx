@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef, type CSSProperties } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
 import { nearbyByCategory, essentialsCount, type CategoryResult } from "@/lib/derive";
 import { formatDistance, insideBBox } from "@/lib/geo";
 import type { Anchor, CategoryId, CityData, CityId, Coordinate, Place, PlacesDataset } from "@/lib/types";
 import { MapPanel } from "./map-panel";
+import { Walkthrough } from "./walkthrough";
+import { AboutDialog } from "./about-dialog";
 
 type Side = "A" | "B";
 type Spot = Anchor & { cityId: CityId };
@@ -29,6 +31,7 @@ const PRESETS: Record<CityId, readonly Preset[]> = {
   ],
 };
 const RADII = [0.5, 1, 2, 3] as const;
+const TOUR_SEEN_KEY = "could-i-live-here-tour-v1";
 
 function presetSpot(cityId: CityId, preset: Preset): Spot {
   return { ...preset, cityId };
@@ -44,6 +47,26 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
   const [selected, setSelected] = useState<CategoryId[]>([]);
   const [focused, setFocused] = useState<Focus>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [cameraRevision, setCameraRevision] = useState(0);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+
+  useEffect(() => {
+    // Defer until after hydration, avoiding server/client content disagreement.
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        if (window.localStorage.getItem(TOUR_SEEN_KEY) !== "seen") setTourOpen(true);
+      } catch {
+        // Private browsing / disabled storage: the tour remains available manually.
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  const closeTour = useCallback(() => {
+    setTourOpen(false);
+    try { window.localStorage.setItem(TOUR_SEEN_KEY, "seen"); } catch { /* Optional preference only. */ }
+  }, []);
 
   const cityFor = (side: Side): CityData => dataset.cities.find((item) => item.id === spots[side].cityId) ?? dataset.cities[0];
   const cityA = cityFor("A");
@@ -65,15 +88,22 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
     setActiveSide(side);
     setFocused(null);
     setNotice(null);
+    // A/B cards also recenter after someone has manually panned away.
+    setCameraRevision((value) => value + 1);
   }
 
   function changeTown(next: CityId) {
     setSpot(activeSide, presetSpot(next, PRESETS[next][0]));
+    setCameraRevision((value) => value + 1);
   }
 
   function choosePreset(id: string) {
     const preset = PRESETS[activeSpot.cityId].find((entry) => entry.id === id);
-    if (preset) setSpot(activeSide, presetSpot(activeSpot.cityId, preset));
+    if (preset) {
+      setSpot(activeSide, presetSpot(activeSpot.cityId, preset));
+      // A new selection is also a camera instruction, even if the map was panned.
+      setCameraRevision((value) => value + 1);
+    }
   }
 
   function movePin(point: Coordinate) {
@@ -101,10 +131,13 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
     <div className="site">
       <header className="site-header">
         <Link className="wordmark" href="/" aria-label="Could I Live Here? Home"><span className="wordmark-icon">⌂</span><span>could i live <em>here?</em></span></Link>
-        <span className="header-postmark">A SMALL FIELD GUIDE TO EVERYDAY LIFE <span aria-hidden="true">✳</span></span>
+        <nav className="header-actions" aria-label="About this app">
+          <button type="button" onClick={() => { setAboutOpen(false); setTourOpen(true); }}>Take the tour</button>
+          <button type="button" onClick={() => { setTourOpen(false); setAboutOpen(true); }}>Why this exists <span aria-hidden="true">↗</span></button>
+        </nav>
       </header>
       <main>
-        <section className="intro" aria-labelledby="headline">
+        <section className="intro" aria-labelledby="headline" data-walkthrough="intro">
           <div>
             <p className="eyebrow"><span className="diamond">◆</span> A BETTER QUESTION THAN “NICE HOUSE?”</p>
             <h1 id="headline">Meet the <span>neighborhood.</span></h1>
@@ -117,7 +150,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
           <aside className="control-panel" aria-label="Location and amenity controls">
             <div className="control-head"><span className="step-index">01 /</span><h2>Choose a place</h2></div>
             <p className="aside-caption steps-copy"><strong>A</strong> is your current-area reference. <strong>B</strong> is somewhere you might move. Select A or B below to view its map.</p>
-            <div className="anchor-picker" role="group" aria-label="Choose which location to edit">
+            <div className="anchor-picker" data-walkthrough="anchors" role="group" aria-label="Choose which location to edit">
               {(["A", "B"] as const).map((side) => {
                 const spot = spots[side];
                 return <button type="button" key={side} className={`anchor-card ${activeSide === side ? "active" : ""}`} onClick={() => activate(side)} aria-pressed={activeSide === side}>
@@ -127,7 +160,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
                 </button>;
               })}
             </div>
-            <div className="location-edit">
+            <div className="location-edit" data-walkthrough="sample">
               <p className="edit-heading">EDIT LOCATION {activeSide}</p>
               <label htmlFor="town" className="control-label">TOWN</label>
               <select id="town" value={activeSpot.cityId} onChange={(event) => changeTown(event.target.value as CityId)} className="town-select">
@@ -138,13 +171,14 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
                 {selectedPreset === "custom" && <option value="custom">My custom map pin</option>}
                 {PRESETS[activeSpot.cityId].map((preset) => <option key={preset.id} value={preset.id}>{preset.label.replace(" (example)", "")}</option>)}
               </select>
+              <button type="button" className="recenter-button" onClick={() => setCameraRevision((value) => value + 1)}>⌖ Center map on {activeSide}</button>
               <p className="location-tip"><strong>To choose your own spot:</strong> click empty map space or drag the {activeSide} pin. Click a colored place dot to inspect it instead.</p>
             </div>
 
             <div className="section-rule" />
             <div className="control-head"><span className="step-index">02 /</span><h2>Choose your essentials</h2></div>
             <p className="aside-caption">Everything starts off. Turn on only what you want to see; each color matches the map and the lists below.</p>
-            <div className="filter-grid" aria-label="Essential types">
+            <div className="filter-grid" aria-label="Essential types" data-walkthrough="essentials">
               {CATEGORIES.map((category) => <button
                 type="button"
                 key={category.id}
@@ -169,11 +203,11 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
               <div className="map-heading-label"><span className="live-dot" /> VIEWING <strong>{activeSide}</strong> · {activeCity.name.toUpperCase()}</div>
               <span className="map-heading-help">Drag the {activeSide} pin or click empty map space to relocate it</span>
             </div>
-            <MapPanel key={`${activeSide}-${activeCity.id}`} city={activeCity} anchor={activeSpot} side={activeSide} radius={radius} selected={selected} focused={currentFocus} onPick={movePin} onFocus={(place) => focusPlace(activeSide, place)} />
+            <MapPanel key={`${activeSide}-${activeCity.id}`} city={activeCity} anchor={activeSpot} side={activeSide} radius={radius} selected={selected} focused={currentFocus} cameraRevision={cameraRevision} onPick={movePin} onFocus={(place) => focusPlace(activeSide, place)} />
             {notice && <p className="inline-notice" role="status">{notice}</p>}
             {!activeDataReady && <div className="data-banner" role="status"><strong>Map data needs a refresh.</strong> Run <code>pnpm data:refresh</code> and deploy the generated <code>data/places.json</code>. Map tiles may still load without that data.</div>}
 
-            <div className="results-heading">
+            <div className="results-heading" data-walkthrough="comparison">
               <div><span className="eyebrow">THE DAY-TO-DAY CHECK</span><h2>What&apos;s within reach?</h2></div>
               <p>Within {radius} mile{radius === 1 ? "" : "s"}, straight line. Click a card to view its area, or a place to inspect it.</p>
             </div>
@@ -188,7 +222,9 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
 
         <section className="lower-note"><span className="asterisk">✳</span><div><h2>A useful answer beats a magical score.</h2><p>Browse every mapped match, not an arbitrary top three. We show straight-line proximity, not quality or convenience. &ldquo;Restaurants&rdquo; is separate from fast food and cafés, but Overture cannot reliably tell independently owned places from chains.</p></div></section>
       </main>
-      <footer className="footer"><span>MADE FOR CURIOUS MOVERS.</span><span>Places © <a href="https://overturemaps.org" target="_blank" rel="noreferrer">Overture Maps</a> · Basemap by <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://docs.overturemaps.org/guides/places/" target="_blank" rel="noreferrer">About the data</a></span><span>{dataset.generatedAt ? `Extracted ${new Date(dataset.generatedAt).toLocaleDateString("en-US", { timeZone: "UTC" })}` : "Awaiting source extract"}</span></footer>
+      <footer className="footer"><span>MADE FOR CURIOUS MOVERS. <a href="https://jasonpollard.com" target="_blank" rel="noreferrer">BY JASON POLLARD</a></span><span>Places © <a href="https://overturemaps.org" target="_blank" rel="noreferrer">Overture Maps</a> · Basemap by <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://docs.overturemaps.org/guides/places/" target="_blank" rel="noreferrer">About the data</a></span><span>{dataset.generatedAt ? `Extracted ${new Date(dataset.generatedAt).toLocaleDateString("en-US", { timeZone: "UTC" })}` : "Awaiting source extract"}</span></footer>
+      {tourOpen && <Walkthrough onClose={closeTour} />}
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>
   );
 }
