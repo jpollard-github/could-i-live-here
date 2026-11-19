@@ -28,4 +28,4 @@ pnpm dev                 # http://localhost:3000
 pnpm check               # lint, types, unit tests, production build
 ```
 
-The repository includes the extracted dataset; no data download is needed just to run it. For a refresh: activate a `.venv`, install `overturemaps`, then run `pnpm data:refresh`. For Chromium tests: install `requirements-e2e.txt`, run `python -m playwright install chromium`, start the built app with `pnpm start`, then run `pnpm test:e2e`. Full commands, source/license caveats, architecture details, review findings, and the AI-assisted workflow are in the **[docs index](docs/README.md)**.
+The repository includes the extracted dataset; no data download is needed just to run it. For a refresh: activate a `.venv`, install `overturemaps`, then run `pnpm data:refresh`. For Chromium tests: install `requirements-e2e.txt`, run `python -m playwright install chromium`, start the built app with `pnpm start`, then run `pnpm test:e2e`. Full setup, test, refresh, and export commands are in **[docs/COMMANDS.md](docs/COMMANDS.md)**. Engineering decisions and review findings are in the [docs index](docs/README.md).

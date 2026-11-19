@@ -5,12 +5,10 @@ import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
 import { nearbyByCategory, essentialsCount, type CategoryResult } from "@/lib/derive";
 import { circleWithinBBox, formatDistance, insideBBox } from "@/lib/geo";
-import { nudgePin, type Direction } from "@/lib/pin-nudge";
 import type { Anchor, CategoryId, CityData, CityId, Coordinate, Place, PlacesDataset } from "@/lib/types";
 import { MapPanel } from "./map-panel";
 import { Walkthrough } from "./walkthrough";
 import { AboutDialog } from "./about-dialog";
-import { KeyboardHelp } from "./keyboard-help";
 
 type Side = "A" | "B";
 type Spot = Anchor & { cityId: CityId };
@@ -51,7 +49,6 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
   const [cameraRevision, setCameraRevision] = useState(0);
   const [tourOpen, setTourOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const cityFor = (side: Side): CityData => dataset.cities.find((item) => item.id === spots[side].cityId) ?? dataset.cities[0];
   const cityA = cityFor("A");
@@ -102,9 +99,6 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
     setSpot(activeSide, { ...point, cityId: activeSpot.cityId, label: `Custom pin · ${activeCity.name}` });
   }
 
-  function moveWithKeyboard(direction: Direction, miles: number) {
-    movePin(nudgePin(activeSpot, direction, miles));
-  }
 
   function focusPlace(side: Side, place: Place) {
     setActiveSide(side);
@@ -164,7 +158,6 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
                 {PRESETS[activeSpot.cityId].map((preset) => <option key={preset.id} value={preset.id}>{preset.label.replace(" (example)", "")}</option>)}
               </select>
               <button type="button" className="recenter-button" onClick={() => setCameraRevision((value) => value + 1)}>⌖ Center map on {activeSide}</button>
-              <button type="button" className="keyboard-help-link" onClick={() => setKeyboardOpen(true)}>⌨ Keyboard help / move pin</button>
               <p className="location-tip"><strong>To choose your own spot:</strong> click empty map space or drag the {activeSide} pin. Click a colored place dot to inspect it instead.</p>
             </div>
 
@@ -219,7 +212,6 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
       <footer className="footer"><span>MADE FOR CURIOUS MOVERS. <a href="https://jasonpollard.com" target="_blank" rel="noreferrer">BY JASON POLLARD</a></span><span>Places © <a href="https://overturemaps.org" target="_blank" rel="noreferrer">Overture Maps</a> · Basemap by <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://docs.overturemaps.org/attribution/" target="_blank" rel="noreferrer">Data licenses & notices</a></span><span>{dataset.generatedAt ? `Extracted ${new Date(dataset.generatedAt).toLocaleDateString("en-US", { timeZone: "UTC" })}` : "Awaiting source extract"}</span></footer>
       {tourOpen && <Walkthrough onClose={() => setTourOpen(false)} />}
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
-      <KeyboardHelp open={keyboardOpen} onClose={() => setKeyboardOpen(false)} side={activeSide} anchor={activeSpot} notice={notice} onMove={moveWithKeyboard} />
     </div>
   );
 }

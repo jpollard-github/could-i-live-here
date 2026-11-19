@@ -96,27 +96,41 @@ export function Walkthrough({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", keydown);
   }, [step, onClose]);
 
+  // Give the highlighted feature its own breathing room without altering page layout.
+  // Position the tour card relative to the padded spotlight, not the raw element.
   const margin = 16;
+  const spotlightPadding = 18;
+  const panelGap = 26;
   const panelWidth = Math.min(395, windowWidth() - 2 * margin);
   const panelHeight = 275; // Used only for placement; content height is naturally sized.
   let left = margin;
   let top = Math.max(margin, windowHeight() - panelHeight - margin);
-  if (target && windowWidth() > 700) {
-    if (target.right + panelWidth + 26 < windowWidth()) {
-      left = target.right + 16;
-      top = Math.max(margin, Math.min(target.top, windowHeight() - panelHeight - margin));
-    } else if (target.left > panelWidth + 26) {
-      left = target.left - panelWidth - 16;
-      top = Math.max(margin, Math.min(target.top, windowHeight() - panelHeight - margin));
+  const spotlight = target ? {
+    top: Math.max(0, target.top - spotlightPadding),
+    left: Math.max(0, target.left - spotlightPadding),
+    right: Math.min(windowWidth(), target.right + spotlightPadding),
+    bottom: Math.min(windowHeight(), target.bottom + spotlightPadding),
+  } : null;
+  if (spotlight && windowWidth() > 700) {
+    if (spotlight.right + panelWidth + panelGap <= windowWidth() - margin) {
+      left = spotlight.right + panelGap;
+      top = Math.max(margin, Math.min(spotlight.top, windowHeight() - panelHeight - margin));
+    } else if (spotlight.left - panelWidth - panelGap >= margin) {
+      left = spotlight.left - panelWidth - panelGap;
+      top = Math.max(margin, Math.min(spotlight.top, windowHeight() - panelHeight - margin));
     } else {
-      left = Math.max(margin, Math.min(target.left, windowWidth() - panelWidth - margin));
-      top = target.bottom + panelHeight + 26 < windowHeight() ? target.bottom + 16 : Math.max(margin, target.top - panelHeight - 16);
+      left = Math.max(margin, Math.min(spotlight.left, windowWidth() - panelWidth - margin));
+      // Make space between the highlighted area and the explanation, whichever
+      // side of the target has room. The card may still scroll on short screens.
+      top = spotlight.bottom + panelHeight + panelGap <= windowHeight() - margin
+        ? spotlight.bottom + panelGap
+        : Math.max(margin, spotlight.top - panelHeight - panelGap);
     }
   }
   const panelStyle: CSSProperties = { left, top, width: panelWidth };
-  const spotlightStyle: CSSProperties | undefined = target ? {
-    top: Math.max(0, target.top - 7), left: Math.max(0, target.left - 7),
-    width: Math.min(windowWidth(), target.width + 14), height: Math.max(0, target.height + 14),
+  const spotlightStyle: CSSProperties | undefined = spotlight ? {
+    top: spotlight.top, left: spotlight.left,
+    width: spotlight.right - spotlight.left, height: spotlight.bottom - spotlight.top,
   } : undefined;
 
   return <div className="tour-layer">
