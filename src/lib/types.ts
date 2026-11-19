@@ -9,6 +9,8 @@ export type Place = Coordinate & {
   taxonomy: string[];
   address?: string;
   confidence?: number;
+  /** Source datasets associated with this record, when preserved by the extract. */
+  sources?: { dataset: string; property?: string }[];
 };
 
 export type CityId = "lexington" | "kernersville";

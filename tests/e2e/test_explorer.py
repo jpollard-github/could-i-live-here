@@ -138,6 +138,23 @@ class ExplorerBrowserTests(unittest.TestCase):
         self.page.get_by_role("button", name=re.compile("1 mi", re.I)).first.click()
         expect(self.page.locator(".map-hint")).to_contain_text("1 mi")
 
+    def test_keyboard_pin_controls_and_partial_coverage_notice(self):
+        self.page.get_by_role("button", name="Keyboard help / move pin").click()
+        dialog = self.page.get_by_role("dialog", name=re.compile("Place your B pin"))
+        expect(dialog).to_be_visible()
+        before = dialog.locator(".keyboard-coordinates").inner_text()
+        self.page.keyboard.press("ArrowRight")
+        expect(dialog.locator(".keyboard-coordinates")).not_to_have_text(before)
+        # MapLibre should remain functional after a keyboard-induced pin change.
+        expect(self.page.locator(".map-shell")).to_have_attribute("data-map-ready", "true")
+        self.page.keyboard.press("Escape")
+        expect(dialog).not_to_be_visible()
+        expect(self.page.get_by_role("button", name="Keyboard help / move pin")).to_be_focused()
+        # 3 miles around Smith Crossing crosses Kernersville's southern extract edge.
+        self.page.get_by_role("button", name=re.compile("Your current area")).click()
+        self.page.get_by_role("button", name=re.compile(r"^3 mi$")).click()
+        expect(self.page.locator(".coverage-warning")).to_contain_text("Partial map-data coverage")
+
     def test_tour_is_opt_in_and_radius_has_its_own_step(self):
         tour = self.page.locator(".tour-panel")
         # Record the tour's scroll instructions; the global page CSS uses smooth

@@ -30,7 +30,7 @@ export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => v
       <section><h3>How I work with AI</h3><p>Codex or in-editor AI helps with focused code tasks. ChatGPT and other general AI tools help with product decisions, architecture, larger refactors, and reviews. I export the repository with a local skill when I want broader feedback. I could automate more, but I deliberately choose what to delegate and review the result myself.</p></section>
     </div>
     <div className="decision-foot">
-      <p>Built by <strong>Jason Pollard</strong> · <a href="https://jasonpollard.com" target="_blank" rel="noreferrer">Personal site</a> · <a href="https://arcadeghost.org" target="_blank" rel="noreferrer">Arcade Ghost</a> · <a href="https://github.com/jpollard-github/could-i-live-here" target="_blank" rel="noreferrer">Source code</a></p>
+      <p>Built by <strong>Jason Pollard</strong> · <a href="https://jasonpollard.com" target="_blank" rel="noreferrer">Personal site</a> · <a href="https://arcadeghosts.org" target="_blank" rel="noreferrer">ArcadeGhosts</a> · <a href="https://github.com/jpollard-github/could-i-live-here" target="_blank" rel="noreferrer">Source code</a></p>
       <button type="button" className="decision-done" onClick={() => ref.current?.close()}>Back to exploring</button>
     </div>
   </dialog>;

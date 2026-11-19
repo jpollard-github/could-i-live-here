@@ -10,14 +10,14 @@ What is tested, what remains unverified, the threat model, and how to reproduce 
 | --- | --- | --- |
 | Untrusted place names and addresses | React renders text; hover popup calls MapLibre `setText()` rather than `setHTML()` | Strong default against HTML injection in these paths; still inspect new rendering paths before adding them |
 | Network/API attack surface | No app write API. Only `/api/health` returns extract metadata | Low app-level input exposure, not zero framework/supply-chain exposure |
-| Secret handling | No app keys; exporter respects ignore rules and now excludes common key-file formats | **Not a secret scanner.** Audit Git history and exported contents manually; future automation could use gitleaks |
-| Dependencies | Frozen pnpm lockfile for Node builds | A prior `pnpm audit --prod` reported the vulnerable MapLibre range and prompted the upgrade. Re-run the audit on the current lockfile before claiming a clean dependency state |
+| Secret handling | No app keys; exporter respects ignore rules and now excludes common key-file formats | **Not a comprehensive secret scanner.** Filename and simple content-pattern checks run before ZIP creation; audit Git history and exported contents manually (gitleaks is a possible future addition) |
+| Dependencies | Frozen pnpm lockfile for Node builds | A prior audit reported MapLibre, which prompted a repair. The user reports a clean local audit; scheduled/PR CI audit and CodeQL await real GitHub runs |
 | Basemap and privacy | Map tiles load from OpenFreeMap | Third party receives network requests for visible areas plus ordinary request metadata; don't claim “the browser contacts nobody” |
 | Browser headers | `poweredByHeader: false`; no explicit CSP or customized security header policy | Good follow-up if exposed beyond a demo; CSP must be tested with MapLibre workers/styles/tiles before enabling |
-| Data provenance | Committed normalized snapshot and source name | Per-feature origin and license data currently stripped; see [architecture and data](ARCHITECTURE.md) |
+| Data provenance | Committed normalized snapshot and source name | Future extracts preserve compact `sources[]`; current checked-in data lacks provenance. Review licenses/notices before wider redistribution |
 | Client-side errors | `console.error` structured event with broad type, no coordinates | Not centralized monitoring; errors may go unnoticed |
 
-**What I actually reviewed:** `src/components/explorer.tsx`, `map-panel.tsx`, `walkthrough.tsx`, `about-dialog.tsx`, geographic/category functions, health route, scripts, package/lock files, GitHub Actions, Vercel config, and the extracted dataset structure. This was manual static inspection plus the checks described below. **Not performed:** authenticated penetration test (not applicable to this app), DAST, browser runtime fuzzing, third-party dependency audit, deployment-header inspection, or Git-history secret scan. No claim of full “secure” status is warranted.
+**What I actually reviewed:** `src/components/explorer.tsx`, `map-panel.tsx`, `walkthrough.tsx`, `about-dialog.tsx`, `keyboard-help.tsx`, geographic/category functions, health route, scripts, package/lock files, GitHub Actions, Vercel config, and the extracted dataset structure. This was manual static inspection plus the checks described below. **Not performed:** authenticated penetration test (not applicable to this app), DAST, browser runtime fuzzing, third-party dependency audit, deployment-header inspection, or Git-history secret scan. No claim of full “secure” status is warranted.
 
 ## Verification: what CI does and does not establish
 
@@ -29,8 +29,8 @@ The local `pnpm check` runs ESLint, TypeScript checks, Node unit/data tests, and
 | Geographic and category logic | Node tests and checked-in data integrity tests | Source completeness, accurate business classification on the ground |
 | Offline extraction and review archive | Python `unittest` for normalization, constraints, exporter safeguards | Remote Overture release drift; archive-wide secret-content scanning |
 | Browser interactions | Chromium E2E: MapLibre worker/source readiness, sample reset, A/B switch, filters, tour | Full screen-reader support, mobile device matrix, actual tile-provider uptime |
-| Dependency security | `pnpm audit --prod` is a **manual** command; previously flagged MapLibre version was upgraded | Independent current zero-advisory result and continuous automated audit gate |
-| Deployment | Vercel Git integration; CI runs on push/PR | Branch-protection / required check gating of Vercel production not verified |
+| Dependency security | `pnpm audit --prod` is now configured for PRs, main and weekly runs in `.github/workflows/security.yml`; previously flagged MapLibre version was upgraded | Independently verified new security workflow run; failure of the audit registry can still require investigation |
+| Deployment | Vercel Git integration; CI runs on push/PR | Branch protection / required checks remain disabled by choice; green scans do not gate Vercel production |
 | Monitoring | `/api/health` for source presence; console errors | Client error aggregation or continuous third-party tile availability |
 
 This is a risk-driven menu, **not a mandatory enterprise checklist**. No database means no Postgres integration test; no container means no image registry. Code coverage percentages would be unhelpful without meaningful browser and data-quality assertions. Add verification for observed failure modes, then document what is still unverified.
@@ -50,7 +50,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py' -v
 # Review the actual committed snapshot (also included in `pnpm test`):
 node --experimental-strip-types --test src/lib/data.test.ts
 
-# Dependency audit is manual, not part of CI:
+# Dependency audit is included in the security workflow; run locally too:
 corepack pnpm audit --prod
 
 # Export; inspect ZIP file list and contents before sharing anywhere:
@@ -62,7 +62,7 @@ curl -i https://could-i-live-here.vercel.app/api/health
 
 **Manual browser smoke (in addition to automated tests; not claimed passed by this document):** Fresh/private browser session: tour stays closed until requested, Escape closes, replay works; both A/B cards activate; choosing another Lexington sample area recenters the circle and pin; choose coffee + pharmacy and compare A/B counts; select an individual result, verify map focus and no pin move; change radius; drag a pin outside the loaded box and check the warning; test 360px width and 200% zoom; repeat key actions without mouse; inspect console and map-tile fallback. Note defects; do not substitute “seems okay” for the list.
 
-**Review basis:** Source inspection of the uploaded 2026-11-18 snapshot and the checks documented in this repository. Browser tests have since been added in source and CI; no claim is made here that an independent production browser run, accessibility audit, or current dependency audit was completed during this documentation-only change.
+**Review basis:** Source inspection of the uploaded 2026-11-18 snapshot and the checks documented in this repository. Browser tests have since been added in source and CI; no claim is made here that an independent production browser run or accessibility audit was completed during this documentation-only change.
 
 ## Sources and review limitations
 
@@ -112,3 +112,13 @@ reintroduce the reported security exposure. Why not Docker/SonarQube? Neither
 would have caught this runtime integration bug. This is a good example of
 adding *specific verification* in response to a real failure, not checkbox
 engineering.
+
+## Security workflow and trial PR habit
+
+`.github/workflows/security.yml` runs **production pnpm audit** and **CodeQL for JavaScript/TypeScript and Python** on main, on pull requests targeting main, and on a weekly schedule. A scheduled run is best effort: GitHub may delay or disable schedules in inactive repositories; check Actions rather than assuming green. Audit checks the upstream registry and will fail if the registry ping fails; it cannot prove all vulnerabilities are known. CodeQL is source analysis, not a dynamic penetration test. The workflow uses CodeQL's advanced setup; do not also configure CodeQL default setup or two overlapping configurations may interfere.
+
+For now, use a short-lived branch and open a PR to main for a real reviewable diff: `git switch -c review/my-change`, commit locally, `git push -u origin review/my-change`, then `gh pr create --base main` if GitHub CLI is installed. Review CI, CodeQL, audit, and Vercel preview before merge. This trial deliberately **does not change branch protection, required status checks or the Vercel production promotion path**. If it feels like needless ceremony for a solo take-home, stop. One experiment is sufficient to learn whether it helps.
+
+## Keyboard and coverage safeguards
+
+The **Keyboard help / move pin** dialog supports arrow keys and smaller Shift+arrow movements; native dialog focus handling and Escape prevent the map from trapping keyboard-only users. E2E covers basic operation, but full screen-reader usability remains a manual check. The data-edge warning appears if any of the geodesic search circle lies outside the city's downloaded bounding box; this is a warning about **geographic coverage**, not a promise the Overture database contains every real place inside the circle.

@@ -41,11 +41,11 @@ It counts selected categories with at least one mapped match, not neighborhood q
 
 **“If the circle overlaps the boundary of your downloaded data, aren't the results misleading?”**
 
-Yes, potentially. The app currently checks that the center lies in the downloaded bounding box but doesn't warn if the circle crosses it. I'd add an edge-coverage warning or restrict valid pin centers. It's a known, bounded correctness gap.
+Yes, potentially. The app checks the entire search circle against the downloaded box and flags partial coverage in the map and the relevant comparison card. Results are intentionally still shown, with an explicit caveat. That only addresses extract boundaries, not missing businesses within the extract.
 
 **“Can a keyboard-only user move the pin?”**
 
-They can use the A/B selectors and named sample areas, but arbitrary pin placement is primarily pointer-driven. That is not equivalent functionality. I would not claim full keyboard accessibility; accessible coordinate fields or keyboard map interactions would be the next fix if broad use is the goal.
+Yes: the keyboard-help dialog lets them move A or B by arrows and shift-arrows (0.1 or 0.01 miles), or by selecting directional buttons. It uses native dialog keyboard/focus behavior. The path needs a real screen-reader and mobile accessibility review before claiming conformance.
 
 **“How did you verify the app, not just your math?”**
 
@@ -57,15 +57,15 @@ No. It proves the configured checks succeeded for that commit. It doesn't establ
 
 **“Did you review security, or just sprinkle security vocabulary into the README?”**
 
-I inspected untrusted-text rendering, external calls, API surface, export tooling, dependencies declared, and config. React text rendering and MapLibre `setText()` avoid obvious injected-HTML paths; there's no app write API or secrets. I fixed the exporter's common-credential filename risk. I did *not* run an end-to-end vulnerability audit or secret-history scan, so I won't claim clearance.
+I inspected untrusted-text rendering, external calls, API surface, export tooling, dependencies declared, and config. React text rendering and MapLibre `setText()` avoid obvious injected-HTML paths; there's no app write API or secrets. I fixed the exporter's common-credential filename risk. The workflow now checks production dependency advisories and runs CodeQL on pushes/PRs and weekly. The user reports a clean local audit, but the newly configured CI and Git history have not yet been verified.
 
 **“Why no Docker, SonarQube, database, IaC, microservices, or elaborate pre-commit hooks?”**
 
-None is required to solve the demonstrated user problem. I would add a tool when it prevents an actual expected failure or reduces real maintenance cost. The higher-value next work is keyboard/accessibility testing and addressing known geographic coverage gaps; the browser happy path already has automated checks.
+None is required to solve the demonstrated user problem. I would add a tool when it prevents an actual expected failure or reduces real maintenance cost. The higher-value next work is a real assistive-technology check, verifying source licenses and notices after refreshing the extract, and testing the actual deployed application.
 
 **“What would you do if you had another afternoon?”**
 
-First, improve the keyboard-only placement path and warn about circles crossing the extract boundary; next, audit current dependencies and source licensing/provenance, then test mobile interaction and live tiles. I wouldn't add features before those reliability gaps are understood.
+First, exercise the new keyboard control with a real screen reader and verify the production security workflow; then refresh the extract to retain provenance, review the applicable license notices, and test mobile interaction and live tiles. I wouldn't add features before those reliability gaps are understood.
 
 **“What's your evidence that people want this?”**
 
