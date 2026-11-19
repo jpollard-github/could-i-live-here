@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from export_repo import ROOT, default_output, safe_include
+from export_repo import ROOT, contains_obvious_secret, default_output, safe_include
 
 
 class DefaultOutputTests(unittest.TestCase):
@@ -31,6 +31,14 @@ class ExportSafetyTests(unittest.TestCase):
             normal = root / "README.md"
             normal.write_text("Safe example", encoding="utf-8")
             self.assertTrue(safe_include(normal, root))
+
+    def test_sensitive_content_is_rejected_even_in_normally_named_files(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            sample = Path(folder) / "notes.txt"
+            sample.write_text("KEY=" + "AKIA" + "Z" * 16, encoding="utf-8")
+            self.assertTrue(contains_obvious_secret(sample))
+            sample.write_text("Ordinary review notes and example data", encoding="utf-8")
+            self.assertFalse(contains_obvious_secret(sample))
 
     def test_symlinks_and_git_metadata_are_excluded(self) -> None:
         with tempfile.TemporaryDirectory() as folder:

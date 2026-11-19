@@ -25,6 +25,18 @@ class ExtractTests(unittest.TestCase):
             },
         }
 
+    def test_preserves_source_provenance_for_new_exports(self):
+        f = self.feature("cafe")
+        f["properties"]["sources"] = [
+            {"dataset": "meta", "property": ""},
+            {"dataset": "foursquare", "property": "name"},
+            {"dataset": "foursquare", "property": "name"},
+            {"dataset": ""},
+        ]
+        self.assertEqual(mod.normalize(f, self.bbox)["sources"], [
+            {"dataset": "meta"}, {"dataset": "foursquare", "property": "name"},
+        ])
+
     def test_exact_taxonomy_tokens(self):
         self.assertIsNone(mod.normalize(self.feature("car_park"), self.bbox))
         self.assertEqual(mod.normalize(self.feature("park"), self.bbox)["name"], "Test name")

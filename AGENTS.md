@@ -39,3 +39,7 @@ Developer workflow is selective: in-editor Codex/AI for code tasks; ChatGPT/gene
 ## Engineering review / unverified claims
 
 Read [`docs/README.md`](docs/README.md) and [`docs/REVIEW-FINDINGS.md`](docs/REVIEW-FINDINGS.md) before asserting production readiness, security clearance, or accessibility conformance. Prefer a concrete failure mode and a verified test over generic CI tooling. Do not say that CI success gates Vercel production deployments without checking branch protection/deployment settings. Do not claim `pnpm repo:export` is secret scanning; inspect its ZIP before uploading.
+
+## Lightweight review and security workflow
+
+For this educational trial, put the next meaningful change on a short-lived branch and consider a PR to main. CI, dependency auditing and CodeQL run on PRs; no branch-protection gate is enforced. See `docs/QUALITY.md` and `docs/REVIEW-FINDINGS.md`. Before exporting a ZIP for AI review, check its contents: filename and content scanning are best-effort, not permission to share private keys or credentials.

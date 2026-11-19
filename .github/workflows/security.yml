@@ -1,0 +1,52 @@
+name: security
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly Monday, 08:17 UTC; GitHub schedules are best-effort.
+    - cron: '17 8 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dependencies:
+    name: Production dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned pnpm dependencies
+        run: |
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+      - name: Confirm registry responds
+        run: curl --fail --show-error --silent --retry 2 https://registry.npmjs.org/-/ping
+      - name: Check production dependencies
+        run: corepack pnpm audit --prod
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, python]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+          build-mode: none
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4

@@ -10,6 +10,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from pathlib import Path
 import subprocess
+import re
 import tempfile
 from zipfile import ZipFile, ZIP_DEFLATED
 
@@ -24,6 +25,22 @@ SENSITIVE_NAMES = {
     "service-account.json", "service_account.json", ".netrc", ".git-credentials",
 }
 SENSITIVE_SUFFIXES = {".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".kdbx"}
+
+# Conservative content checks for recognizable credential formats, not a
+# replacement for a professional secret scanner or a Git history audit.
+SECRET_PATTERNS = [
+    re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    re.compile(rb"AKIA[A-Z0-9]{16}"),
+    re.compile(rb"gh[pousr]_[a-zA-Z0-9]{32,}"),
+    re.compile(rb"github_pat_[a-zA-Z0-9_]{30,}"),
+    re.compile(rb"sk-proj-[a-zA-Z0-9_-]{24,}"),
+]
+
+def contains_obvious_secret(path: Path) -> bool:
+    # Read individual candidate files, not Git's commit history. Avoid building
+    # a complete archive before finding secrets in the selected source.
+    content = path.read_bytes()
+    return any(pattern.search(content) for pattern in SECRET_PATTERNS)
 
 
 
@@ -72,11 +89,14 @@ def main() -> None:
     if target.is_relative_to(ROOT) and not target.is_relative_to(EXPORTS_DIR):
         raise SystemExit("Put the export ZIP outside the repository or in its exports directory")
     names = [name for name in git_entries(ROOT) if safe_include(ROOT / name, ROOT)]
+    flagged = [name for name in names if contains_obvious_secret(ROOT / name)]
+    if flagged:
+        raise SystemExit("Refusing export: possible credential content in " + ", ".join(flagged))
     with ZipFile(target, "w", ZIP_DEFLATED, compresslevel=9) as archive:
         for name in names:
             archive.write(ROOT / name, arcname=f"could-i-live-here/{name}")
     print(f"Exported {len(names)} unignored, filtered source files to {target} ({target.stat().st_size:,} bytes)")
-    print("WARNING: Filename filters and .gitignore are not secret scanning. Review the ZIP before uploading.")
+    print("WARNING: Simple credential patterns are not a comprehensive secret or Git history scan. Inspect the ZIP before sharing.")
 
 
 if __name__ == "__main__":

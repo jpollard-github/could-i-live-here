@@ -77,6 +77,28 @@ def normalize(feature: dict[str, Any], bbox: list[float]) -> dict[str, Any] | No
         result["address"] = address.strip()[:200]
     if isinstance(confidence, (int, float)):
         result["confidence"] = round(float(confidence), 3)
+    # Keep only dataset/property provenance: source identifiers can be long and
+    # are not necessary for displaying the current two-town comparison.
+    sources = props.get("sources") or feature.get("sources") or []
+    if isinstance(sources, list):
+        seen = set()
+        normalized_sources = []
+        for entry in sources:
+            if not isinstance(entry, dict):
+                continue
+            dataset = entry.get("dataset")
+            prop = entry.get("property")
+            if not isinstance(dataset, str) or not dataset.strip():
+                continue
+            info = {"dataset": dataset.strip()[:120]}
+            if isinstance(prop, str) and prop.strip():
+                info["property"] = prop.strip()[:100]
+            identity = (info["dataset"], info.get("property"))
+            if identity not in seen:
+                seen.add(identity)
+                normalized_sources.append(info)
+        if normalized_sources:
+            result["sources"] = normalized_sources
     return result
 
 

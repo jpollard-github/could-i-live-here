@@ -1,4 +1,5 @@
 import type { Coordinate } from "./types.ts";
+import { radiusRing } from "./circle.ts";
 
 const EARTH_RADIUS_MI = 3958.7613;
 
@@ -23,4 +24,12 @@ export function formatDistance(miles: number): string {
 export function insideBBox(point: Coordinate, bbox: readonly number[]): boolean {
   return point.lng >= bbox[0] && point.lng <= bbox[2] &&
     point.lat >= bbox[1] && point.lat <= bbox[3];
+}
+
+/** True only when the entire search circle falls within the downloaded data box.
+ * The radius may be valid while the underlying results are incomplete.
+ */
+export function circleWithinBBox(center: Coordinate, miles: number, bbox: readonly number[]): boolean {
+  // Higher sampling density helps avoid missing a bbox edge at the narrowest margin.
+  return radiusRing(center, miles, 360).every(([lng, lat]) => insideBBox({ lng, lat }, bbox));
 }

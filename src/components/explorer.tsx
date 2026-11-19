@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
 import { nearbyByCategory, essentialsCount, type CategoryResult } from "@/lib/derive";
-import { formatDistance, insideBBox } from "@/lib/geo";
+import { circleWithinBBox, formatDistance, insideBBox } from "@/lib/geo";
+import { nudgePin, type Direction } from "@/lib/pin-nudge";
 import type { Anchor, CategoryId, CityData, CityId, Coordinate, Place, PlacesDataset } from "@/lib/types";
 import { MapPanel } from "./map-panel";
 import { Walkthrough } from "./walkthrough";
 import { AboutDialog } from "./about-dialog";
+import { KeyboardHelp } from "./keyboard-help";
 
 type Side = "A" | "B";
 type Spot = Anchor & { cityId: CityId };
@@ -49,15 +51,19 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
   const [cameraRevision, setCameraRevision] = useState(0);
   const [tourOpen, setTourOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   const cityFor = (side: Side): CityData => dataset.cities.find((item) => item.id === spots[side].cityId) ?? dataset.cities[0];
   const cityA = cityFor("A");
   const cityB = cityFor("B");
   const activeCity = cityFor(activeSide);
   const activeSpot = spots[activeSide];
+  const partialA = !circleWithinBBox(spots.A, radius, cityA.bbox);
+  const partialB = !circleWithinBBox(spots.B, radius, cityB.bbox);
+  const activePartial = activeSide === "A" ? partialA : partialB;
   const currentFocus = focused?.side === activeSide ? activeCity.places.find((place) => place.id === focused.id) ?? null : null;
-  const resultsA = useMemo(() => nearbyByCategory(cityA.places, spots.A, radius, selected), [cityA, spots.A, radius, selected]);
-  const resultsB = useMemo(() => nearbyByCategory(cityB.places, spots.B, radius, selected), [cityB, spots.B, radius, selected]);
+  const resultsA = nearbyByCategory(cityA.places, spots.A, radius, selected);
+  const resultsB = nearbyByCategory(cityB.places, spots.B, radius, selected);
   const selectedPreset = PRESETS[activeSpot.cityId].find((preset) => preset.lat === activeSpot.lat && preset.lng === activeSpot.lng)?.id ?? "custom";
 
   function setSpot(side: Side, next: Spot) {
@@ -94,6 +100,10 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
       return;
     }
     setSpot(activeSide, { ...point, cityId: activeSpot.cityId, label: `Custom pin · ${activeCity.name}` });
+  }
+
+  function moveWithKeyboard(direction: Direction, miles: number) {
+    movePin(nudgePin(activeSpot, direction, miles));
   }
 
   function focusPlace(side: Side, place: Place) {
@@ -154,6 +164,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
                 {PRESETS[activeSpot.cityId].map((preset) => <option key={preset.id} value={preset.id}>{preset.label.replace(" (example)", "")}</option>)}
               </select>
               <button type="button" className="recenter-button" onClick={() => setCameraRevision((value) => value + 1)}>⌖ Center map on {activeSide}</button>
+              <button type="button" className="keyboard-help-link" onClick={() => setKeyboardOpen(true)}>⌨ Keyboard help / move pin</button>
               <p className="location-tip"><strong>To choose your own spot:</strong> click empty map space or drag the {activeSide} pin. Click a colored place dot to inspect it instead.</p>
             </div>
 
@@ -187,6 +198,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
             </div>
             <MapPanel key={`${activeSide}-${activeCity.id}`} city={activeCity} anchor={activeSpot} side={activeSide} radius={radius} selected={selected} focused={currentFocus} cameraRevision={cameraRevision} onPick={movePin} onFocus={(place) => focusPlace(activeSide, place)} />
             {notice && <p className="inline-notice" role="status">{notice}</p>}
+            {activePartial && <p className="coverage-warning" role="status"><strong>Partial map-data coverage.</strong> Part of this {radius}-mile circle lies outside our downloaded Overture extract. Nearby lists might miss places across that boundary. Move the pin inward or choose a smaller radius for a complete geographic search area.</p>}
             {!activeDataReady && <div className="data-banner" role="status"><strong>Map data needs a refresh.</strong> Run <code>pnpm data:refresh</code> and deploy the generated <code>data/places.json</code>. Map tiles may still load without that data.</div>}
 
             <div className="results-heading" data-walkthrough="comparison">
@@ -195,8 +207,8 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
             </div>
             {selected.length === 0 ? <div className="empty-state"><strong>Start with one essential.</strong><span>Choose a colored category on the left. We&apos;ll show its matches for A and B, with all places available to browse.</span></div> : (
               <div className="result-grid is-comparing">
-                <ResultsCard title="Current area" anchor={spots.A} city={cityA} results={resultsA} categoryCount={selected.length} letter="A" onFocus={(place) => focusPlace("A", place)} onView={() => activate("A")} focusedId={focused?.side === "A" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityA.places.length > 0} active={activeSide === "A"} />
-                <ResultsCard title="A possible move" anchor={spots.B} city={cityB} results={resultsB} categoryCount={selected.length} letter="B" onFocus={(place) => focusPlace("B", place)} onView={() => activate("B")} focusedId={focused?.side === "B" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityB.places.length > 0} active={activeSide === "B"} />
+                <ResultsCard title="Current area" anchor={spots.A} city={cityA} results={resultsA} categoryCount={selected.length} letter="A" onFocus={(place) => focusPlace("A", place)} onView={() => activate("A")} focusedId={focused?.side === "A" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityA.places.length > 0} active={activeSide === "A"} partial={partialA} />
+                <ResultsCard title="A possible move" anchor={spots.B} city={cityB} results={resultsB} categoryCount={selected.length} letter="B" onFocus={(place) => focusPlace("B", place)} onView={() => activate("B")} focusedId={focused?.side === "B" ? focused.id : null} onClearFocus={() => setFocused(null)} isDataReady={dataset.generatedAt !== null && cityB.places.length > 0} active={activeSide === "B"} partial={partialB} />
               </div>
             )}
           </section>
@@ -204,14 +216,15 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
 
         <section className="lower-note"><span className="asterisk">✳</span><div><h2>A useful answer beats a magical score.</h2><p>Browse every mapped match, not an arbitrary top three. We show straight-line proximity, not quality or convenience. &ldquo;Restaurants&rdquo; is separate from fast food and cafés, but Overture cannot reliably tell independently owned places from chains.</p></div></section>
       </main>
-      <footer className="footer"><span>MADE FOR CURIOUS MOVERS. <a href="https://jasonpollard.com" target="_blank" rel="noreferrer">BY JASON POLLARD</a></span><span>Places © <a href="https://overturemaps.org" target="_blank" rel="noreferrer">Overture Maps</a> · Basemap by <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://docs.overturemaps.org/guides/places/" target="_blank" rel="noreferrer">About the data</a></span><span>{dataset.generatedAt ? `Extracted ${new Date(dataset.generatedAt).toLocaleDateString("en-US", { timeZone: "UTC" })}` : "Awaiting source extract"}</span></footer>
+      <footer className="footer"><span>MADE FOR CURIOUS MOVERS. <a href="https://jasonpollard.com" target="_blank" rel="noreferrer">BY JASON POLLARD</a></span><span>Places © <a href="https://overturemaps.org" target="_blank" rel="noreferrer">Overture Maps</a> · Basemap by <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://docs.overturemaps.org/attribution/" target="_blank" rel="noreferrer">Data licenses & notices</a></span><span>{dataset.generatedAt ? `Extracted ${new Date(dataset.generatedAt).toLocaleDateString("en-US", { timeZone: "UTC" })}` : "Awaiting source extract"}</span></footer>
       {tourOpen && <Walkthrough onClose={() => setTourOpen(false)} />}
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <KeyboardHelp open={keyboardOpen} onClose={() => setKeyboardOpen(false)} side={activeSide} anchor={activeSpot} notice={notice} onMove={moveWithKeyboard} />
     </div>
   );
 }
 
-function ResultsCard({ title, anchor, city, results, categoryCount, letter, onFocus, onView, focusedId, onClearFocus, isDataReady, active }: {
+function ResultsCard({ title, anchor, city, results, categoryCount, letter, onFocus, onView, focusedId, onClearFocus, isDataReady, active, partial }: {
   title: string;
   anchor: Spot;
   city: CityData;
@@ -224,6 +237,7 @@ function ResultsCard({ title, anchor, city, results, categoryCount, letter, onFo
   onClearFocus: () => void;
   isDataReady: boolean;
   active: boolean;
+  partial: boolean;
 }) {
   return <article
     className={`results-card ${active ? "results-active" : ""}`}
@@ -240,6 +254,7 @@ function ResultsCard({ title, anchor, city, results, categoryCount, letter, onFo
     <div className="result-lines">
       {results.map((result) => <CategoryResults key={result.id} result={result} onFocus={onFocus} onClearFocus={onClearFocus} focusedId={focusedId} />)}
     </div>
+    {partial && <p className="coverage-note">{letter}: Partial coverage. Some nearby places could be outside the downloaded data.</p>}
     <div className="result-bottom">{isDataReady ? "From the downloaded Overture snapshot. Counts may include duplicate listings." : "Waiting for the first data extract."}</div>
   </article>;
 }
