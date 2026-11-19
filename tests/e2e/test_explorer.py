@@ -145,6 +145,7 @@ class ExplorerBrowserTests(unittest.TestCase):
         expect(self.page.locator(".coverage-warning")).to_have_count(0)
         self.page.get_by_role("button", name=re.compile(r"^3 mi$")).click()
         expect(self.page.locator(".coverage-warning")).to_contain_text("Partial map-data coverage")
+        self.page.get_by_role("button", name=re.compile("Fast food")).click()
         expect(self.page.locator(".results-card").first.locator(".coverage-note")).to_contain_text("Partial coverage")
         self.page.get_by_role("button", name=re.compile(r"^0\.5 mi$")).click()
         expect(self.page.locator(".coverage-warning")).to_have_count(0)
