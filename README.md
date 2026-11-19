@@ -2,14 +2,14 @@
 
 **One-sentence pitch:** Compare what everyday life might look like around your current location and a possible new home, using nearby places from Overture Maps rather than an invented neighborhood score.
 
-A small, usable neighborhood explorer for somebody considering a move. By default, **A is a Kernersville, NC reference** and **B is a Lexington, NC candidate**. Switch B among example areas or place either pin anywhere within the downloaded region. The supplied coordinates are **not home listings**. The user decides what matters.
+A small, usable neighborhood explorer for somebody considering a move. By default, **A starts in the Smith Crossing area of Kernersville, NC** and **B is a downtown Lexington, NC candidate**. The A point represents the general apartment-complex area, not a verified unit/address geocode. Switch B among example areas or place either pin anywhere within the downloaded region. The supplied coordinates are **not home listings**. The user decides what matters.
 
 ## How to use it
 
 1. Select **A** (where you live now) or **B** (where you might move). The map shows the selected location; the other location remains in the comparison below.
 2. Choose a town and sample area, or **click empty map space / drag the letter pin** to place A or B precisely. Clicking a colored dot *inspects that place* and does not move the pin.
 3. Enable the amenity categories you care about. All are **off by default**. The dashed circle is **0.5 miles** by default. Change the straight-line radius if useful.
-4. Compare the results for A and B. **Browse** any category to scroll through **all** matching mapped places; selecting a result highlights it on the map.
+4. Compare the results for A and B. Click **any non-control part of a comparison card** to show it on the map (or use its View button); Browse buttons also switch the map as they expand. **Browse** any category to scroll through **all** matching mapped places; selecting a result highlights it on the map without losing focus.
 
 Seven distinct filters: Groceries, Coffee & cafés, Pharmacy, Parks, Restaurants, Fast food, Hardware. Fast food is separate from restaurants, and cafés are separate from both. **“Restaurants” does not mean locally owned**; Overture cannot establish ownership consistently, so we make no such claim.
 

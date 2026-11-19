@@ -14,8 +14,10 @@ type Focus = { side: Side; id: string } | null;
 type Preset = Anchor & { id: string };
 
 // Approximate sample areas, not real-estate listings or verified home addresses.
+// A starts near the Smith Crossing Drive apartments, not at a specific unit.
 const PRESETS: Record<CityId, readonly Preset[]> = {
   kernersville: [
+    { id: "smith-crossing", label: "Smith Crossing apartments (approx.)", lat: 36.0745, lng: -80.1017 },
     { id: "downtown", label: "Downtown Kernersville (example)", lat: 36.1199, lng: -80.0737 },
     { id: "east", label: "East Kernersville (example)", lat: 36.117, lng: -80.041 },
   ],
@@ -173,7 +175,7 @@ export function Explorer({ dataset }: { dataset: PlacesDataset }) {
 
             <div className="results-heading">
               <div><span className="eyebrow">THE DAY-TO-DAY CHECK</span><h2>What&apos;s within reach?</h2></div>
-              <p>Within {radius} mile{radius === 1 ? "" : "s"}, straight line. Click a result to find it on the map.</p>
+              <p>Within {radius} mile{radius === 1 ? "" : "s"}, straight line. Click a card to view its area, or a place to inspect it.</p>
             </div>
             {selected.length === 0 ? <div className="empty-state"><strong>Start with one essential.</strong><span>Choose a colored category on the left. We&apos;ll show its matches for A and B, with all places available to browse.</span></div> : (
               <div className="result-grid is-comparing">
@@ -205,7 +207,16 @@ function ResultsCard({ title, anchor, city, results, categoryCount, letter, onFo
   isDataReady: boolean;
   active: boolean;
 }) {
-  return <article className={`results-card ${active ? "results-active" : ""}`}>
+  return <article
+    className={`results-card ${active ? "results-active" : ""}`}
+    onClick={(event) => {
+      // The card is a mouse-sized target, but its buttons keep their own actions.
+      // In particular, focusing a place must not be followed by a card activation
+      // that clears the focus we just set.
+      if (event.target instanceof Element && event.target.closest(".place-row, .text-button")) return;
+      if (!active) onView();
+    }}
+  >
     <div className="result-top"><div className={`result-letter result-${letter.toLowerCase()}`}>{letter}</div><div className="result-title"><small>{title} · {city.name}</small><h3>{anchor.label}</h3></div><div className="count-note"><strong>{isDataReady ? essentialsCount(results) : "—"}<span>/{categoryCount}</span></strong><small>categories found</small></div></div>
     <div className="results-view-row"><button type="button" className="text-button" onClick={onView}>{active ? "Showing this location on map" : `View location ${letter} on map`}</button></div>
     <div className="result-lines">

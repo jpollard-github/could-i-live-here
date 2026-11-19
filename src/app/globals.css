@@ -133,6 +133,9 @@ h1 span { font-style: italic; color: var(--coral-dark); }
 .map-hint { max-width: calc(100% - 90px); white-space: normal; line-height: 1.35; }
 .anchor-marker { cursor: grab; }
 .anchor-marker:active { cursor: grabbing; }
+/* The whole comparison card switches the map; nested controls remain usable. */
+.results-card:not(.results-active) { cursor: pointer; }
+.results-card:not(.results-active):hover { border-color: #728e7a; background: #fffdf7; }
 .results-card.results-active { border-color: #728e7a; box-shadow: 0 0 0 1px #728e7a; }
 .results-view-row { padding: 8px 14px; background: #faf8f1; border-bottom: 1px solid #e6e1d7; }
 .category-result { border-bottom: 1px solid #eae5db; }
